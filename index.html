@@ -1,0 +1,1769 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ML Plate Book — เครื่องมือทดลองอัลกอริทึม Machine Learning</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans+Thai:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root{
+  --paper:#E8EEF2; --plate:#FFFFFF; --ink:#0E1D29; --dim:#5B7285; --rule:#C6D3DC; --hair:#DEE7ED;
+  --p1:#0B6E99; --p2:#CC2F6B; --p3:#DD5606; --p4:#1F7A3D; --p5:#5F3DC4; --p6:#8A6D00;
+  --sp:clamp(16px,2.2vw,28px);
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0; background:var(--paper); color:var(--ink);
+  font-family:"IBM Plex Sans Thai","IBM Plex Mono",system-ui,sans-serif;
+  font-size:15px; line-height:1.65;
+  background-image:
+    linear-gradient(var(--hair) 1px, transparent 1px),
+    linear-gradient(90deg, var(--hair) 1px, transparent 1px);
+  background-size:28px 28px;
+}
+h1,h2,h3,.mono,.eyebrow,.plate-no,button,select,label{font-family:"Chakra Petch","IBM Plex Mono",monospace}
+.mono,code,pre,.val{font-family:"IBM Plex Mono",monospace}
+
+/* ---------- masthead ---------- */
+.masthead{
+  border-bottom:1px solid var(--rule); background:var(--plate);
+  padding:var(--sp) var(--sp) calc(var(--sp) * .8);
+}
+.mast-inner{max-width:1320px;margin:0 auto;display:flex;flex-wrap:wrap;gap:20px;align-items:flex-end;justify-content:space-between}
+.masthead h1{
+  margin:0; font-size:clamp(26px,4.4vw,46px); font-weight:700; letter-spacing:-.5px; line-height:1.1;
+}
+.masthead h1 em{font-style:normal;color:var(--p1)}
+.masthead p{margin:.5em 0 0;max-width:52ch;color:var(--dim);font-size:14px}
+.stamp{
+  font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.14em;text-transform:uppercase;
+  color:var(--dim);border:1px solid var(--rule);padding:8px 12px;line-height:1.5;white-space:pre;
+}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1320px;margin:0 auto;padding:var(--sp);display:grid;grid-template-columns:230px 1fr;gap:var(--sp);align-items:start}
+nav{position:sticky;top:var(--sp)}
+.nav-group{margin-bottom:18px}
+.nav-group > span{
+  display:block;font-family:"IBM Plex Mono",monospace;font-size:10px;letter-spacing:.16em;
+  text-transform:uppercase;color:var(--dim);padding:0 0 6px;border-bottom:1px solid var(--rule);margin-bottom:6px;
+}
+nav a{
+  display:flex;gap:9px;align-items:baseline;text-decoration:none;color:var(--ink);
+  padding:5px 7px;font-size:13.5px;border-radius:2px;
+}
+nav a .n{font-family:"IBM Plex Mono",monospace;font-size:11px;color:var(--dim);min-width:18px}
+nav a:hover{background:var(--plate)}
+nav a.on{background:var(--ink);color:var(--paper)}
+nav a.on .n{color:var(--paper);opacity:.6}
+
+/* ---------- plate ---------- */
+.plate{
+  background:var(--plate);border:1px solid var(--rule);padding:clamp(16px,2.4vw,30px);
+  position:relative;display:none;
+}
+.plate.on{display:block;animation:in .35s ease both}
+@keyframes in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+.plate::before,.plate::after{
+  content:"";position:absolute;width:12px;height:12px;pointer-events:none;
+}
+.plate::before{top:-1px;left:-1px;border-top:2px solid var(--ink);border-left:2px solid var(--ink)}
+.plate::after{bottom:-1px;right:-1px;border-bottom:2px solid var(--ink);border-right:2px solid var(--ink)}
+.plate-head{display:flex;gap:16px;align-items:flex-start;border-bottom:1px solid var(--rule);padding-bottom:14px;margin-bottom:18px}
+.plate-no{
+  font-size:34px;font-weight:700;line-height:1;color:var(--p1);
+  border-right:1px solid var(--rule);padding-right:16px;
+}
+.plate-head h2{margin:0;font-size:clamp(20px,2.6vw,28px);font-weight:600;letter-spacing:-.3px}
+.eyebrow{margin:2px 0 0;font-family:"IBM Plex Mono",monospace;font-size:11px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim)}
+.lede{margin:0 0 16px;max-width:74ch;color:#28414f}
+
+/* ---------- stage / canvas ---------- */
+.stage{border:1px solid var(--rule);background:#fff;position:relative;overflow:hidden}
+canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:none}
+canvas.tall{aspect-ratio:16/10}
+canvas.sq{aspect-ratio:4/3}
+.hint{
+  display:block;background:var(--ink);color:var(--paper);
+  font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;padding:5px 10px;
+}
+
+/* ---------- control rack ---------- */
+.rack{
+  display:flex;flex-wrap:wrap;gap:10px 18px;align-items:center;
+  border:1px solid var(--rule);border-top:none;padding:11px 14px;background:#FBFCFD;
+}
+.rack label{display:flex;gap:8px;align-items:center;font-size:12px;letter-spacing:.02em;color:var(--dim)}
+.rack input[type=range]{width:110px;accent-color:var(--p1)}
+.rack .val{font-size:12px;color:var(--ink);min-width:34px;font-weight:600}
+button{
+  font-size:12px;letter-spacing:.04em;font-weight:600;padding:6px 13px;cursor:pointer;
+  background:var(--ink);color:var(--paper);border:1px solid var(--ink);border-radius:2px;
+}
+button.ghost{background:transparent;color:var(--ink)}
+button:hover{background:var(--p1);border-color:var(--p1);color:#fff}
+button:focus-visible,a:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--p3);outline-offset:2px}
+select{font-size:12px;padding:5px 8px;border:1px solid var(--rule);background:#fff;border-radius:2px;color:var(--ink)}
+.readout{
+  margin-left:auto;font-family:"IBM Plex Mono",monospace;font-size:12px;color:var(--p1);font-weight:600;
+}
+
+/* ---------- notes ---------- */
+.notes{display:grid;grid-template-columns:repeat(auto-fit,minmax(210px,1fr));gap:0;margin-top:20px;border-top:1px solid var(--rule)}
+.note{padding:14px 18px 4px 0;border-right:1px solid var(--hair)}
+.note:last-child{border-right:none}
+.note h3{margin:0 0 6px;font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);font-weight:600}
+.note p{margin:0 0 10px;font-size:13.5px}
+.eq{font-family:"IBM Plex Mono",monospace;font-size:13px;background:#F3F7F9;border-left:2px solid var(--p1);padding:8px 11px;display:block;overflow-x:auto}
+details{margin-top:14px;border-top:1px solid var(--rule);padding-top:12px}
+summary{cursor:pointer;font-family:"Chakra Petch",monospace;font-size:12px;letter-spacing:.06em;color:var(--p1);font-weight:600}
+pre{background:#0E1D29;color:#DCE7EE;padding:14px 16px;overflow-x:auto;font-size:12.5px;line-height:1.7;margin:12px 0 0;border-radius:2px}
+pre .k{color:#7FD1F0}.c{color:#7A96A8;font-style:italic}.s{color:#F0A868}
+
+footer{max-width:1320px;margin:0 auto;padding:0 var(--sp) 48px;color:var(--dim);font-size:12.5px}
+footer hr{border:none;border-top:1px solid var(--rule);margin:0 0 14px}
+footer code{background:#fff;border:1px solid var(--rule);padding:1px 5px;font-size:12px}
+
+@media (max-width:860px){
+  .wrap{grid-template-columns:1fr}
+  nav{position:static;overflow-x:auto;display:flex;gap:14px;padding-bottom:6px}
+  .nav-group{margin:0;min-width:200px}
+  .note{border-right:none;border-bottom:1px solid var(--hair);padding-right:0}
+  .plate-no{font-size:26px}
+}
+@media (prefers-reduced-motion:reduce){*{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
+</head>
+<body>
+
+<header class="masthead">
+  <div class="mast-inner">
+    <div>
+      <h1>ML <em>Plate Book</em></h1>
+      <p>แผ่นทดลอง 14 ใบ — อัลกอริทึม Machine Learning ที่ <strong>รันจริงในเบราว์เซอร์</strong> ไม่ใช่แค่ภาพนิ่ง ปรับค่า คลิกเพิ่มข้อมูล แล้วดูโมเดลขยับตาม</p>
+    </div>
+    <div class="stamp">PLATES 01–14
+SUPERVISED / UNSUPERVISED / RL
+PURE HTML + CANVAS · NO LIBRARY</div>
+  </div>
+</header>
+
+<div class="wrap">
+<nav id="nav">
+  <div class="nav-group">
+    <span>Supervised Learning</span>
+    <a href="#" data-go="1" class="on"><i class="n">01</i>Linear Regression</a>
+    <a href="#" data-go="2"><i class="n">02</i>Logistic Regression</a>
+    <a href="#" data-go="3"><i class="n">03</i>k-Nearest Neighbors</a>
+    <a href="#" data-go="4"><i class="n">04</i>Decision Tree</a>
+    <a href="#" data-go="5"><i class="n">05</i>Random Forest</a>
+    <a href="#" data-go="6"><i class="n">06</i>SVM</a>
+    <a href="#" data-go="7"><i class="n">07</i>K-Means</a>
+    <a href="#" data-go="8"><i class="n">08</i>MLP Neural Net</a>
+    <a href="#" data-go="13"><i class="n">13</i>XGBoost</a>
+    <a href="#" data-go="14"><i class="n">14</i>Stacking</a>
+  </div>
+  <div class="nav-group">
+    <span>Deep Learning</span>
+    <a href="#" data-go="9"><i class="n">09</i>CNN</a>
+    <a href="#" data-go="10"><i class="n">10</i>LSTM</a>
+    <a href="#" data-go="11"><i class="n">11</i>Transformer</a>
+  </div>
+  <div class="nav-group">
+    <span>Reinforcement</span>
+    <a href="#" data-go="12"><i class="n">12</i>Q-Learning</a>
+  </div>
+</nav>
+
+<main id="main">
+
+<!-- 01 ---------------------------------------------------------------->
+<section class="plate on" data-plate="1" data-demo="linreg">
+  <div class="plate-head"><span class="plate-no">01</span>
+    <div><h2>Linear Regression</h2><p class="eyebrow">Supervised · Regression · Least Squares</p></div></div>
+  <p class="lede">ลากเส้นตรงเส้นเดียวให้ผ่านกลุ่มข้อมูลโดยให้ผลรวมของ "ระยะห่างแนวตั้งยกกำลังสอง" น้อยที่สุด เส้นสีส้มคือ residual ของแต่ละจุด — คลิกบนกราฟเพื่อเพิ่มจุดแล้วดูเส้นขยับ</p>
+  <div class="stage"><canvas id="cv-linreg"></canvas><span class="hint">คลิกบนพื้นที่กราฟ = เพิ่มจุดข้อมูล</span></div>
+  <div class="rack">
+    <button data-act="linreg-noise">สุ่มข้อมูลใหม่</button>
+    <button class="ghost" data-act="linreg-clear">ล้างจุดทั้งหมด</button>
+    <label>แสดง residual <input type="checkbox" id="linreg-res" checked></label>
+    <span class="readout" id="linreg-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>สมการ</h3><span class="eq">ŷ = w·x + b<br>Loss = Σ(y − ŷ)² / n</span></div>
+    <div class="note"><h3>หาค่า w, b ยังไง</h3><p>ใช้สูตรปิด (closed form) จาก covariance ÷ variance หรือใช้ gradient descent ก็ได้ผลเดียวกัน</p></div>
+    <div class="note"><h3>ใช้ตอนไหน</h3><p>ทำนาย "ตัวเลขต่อเนื่อง" เช่น ราคาบ้าน ยอดขาย และใช้เป็น baseline ก่อนลองโมเดลซับซ้อน</p></div>
+    <div class="note"><h3>ข้อควรระวัง</h3><p>ไวต่อ outlier มาก จุดหลุดจุดเดียวดึงเส้นทั้งเส้นได้ ลองคลิกเพิ่มจุดไกล ๆ ดู</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="c"># ทำนายค่าต่อเนื่องด้วยเส้นตรง</span>
+<span class="k">from</span> sklearn.linear_model <span class="k">import</span> LinearRegression
+model = LinearRegression().fit(X_train, y_train)
+print(model.coef_, model.intercept_, model.score(X_test, y_test))</pre></details>
+</section>
+
+<!-- 02 ---------------------------------------------------------------->
+<section class="plate" data-plate="2" data-demo="logreg">
+  <div class="plate-head"><span class="plate-no">02</span>
+    <div><h2>Logistic Regression</h2><p class="eyebrow">Supervised · Classification · Sigmoid</p></div></div>
+  <p class="lede">เอาเส้นตรงมาผ่านฟังก์ชัน sigmoid เพื่อบีบผลลัพธ์ให้อยู่ในช่วง 0–1 แล้วอ่านเป็น "ความน่าจะเป็นของคลาส" เฉดสีพื้นหลังคือความมั่นใจของโมเดล ยิ่งซีดแปลว่ายิ่งลังเล</p>
+  <div class="stage"><canvas id="cv-logreg"></canvas><span class="hint">คลิก = เพิ่มจุดคลาสที่เลือก · โมเดลเทรนต่อทันที</span></div>
+  <div class="rack">
+    <button data-act="logreg-train">เทรนใหม่</button>
+    <label>คลิกเพื่อเพิ่มคลาส
+      <select id="logreg-cls"><option value="0">คลาส A (น้ำเงิน)</option><option value="1">คลาส B (ชมพู)</option></select></label>
+    <label>learning rate <input type="range" id="logreg-lr" min="1" max="60" value="25"><span class="val" id="logreg-lrv">0.25</span></label>
+    <span class="readout" id="logreg-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>สมการ</h3><span class="eq">z = w₁x₁ + w₂x₂ + b<br>p = 1 / (1 + e⁻ᶻ)</span></div>
+    <div class="note"><h3>Loss</h3><p>Binary Cross-Entropy: −[y·log p + (1−y)·log(1−p)] ลดด้วย gradient descent</p></div>
+    <div class="note"><h3>จุดเด่น</h3><p>ตีความง่าย ค่าน้ำหนักบอกได้ว่าฟีเจอร์ไหนดันไปทางคลาสใด เร็วมากและเป็น baseline มาตรฐาน</p></div>
+    <div class="note"><h3>ข้อจำกัด</h3><p>เส้นแบ่งเป็นเส้นตรงเสมอ ถ้าข้อมูลพันกันเป็นเกลียวต้องพึ่ง kernel หรือ neural net</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.linear_model <span class="k">import</span> LogisticRegression
+clf = LogisticRegression(C=<span class="s">1.0</span>, max_iter=<span class="s">1000</span>).fit(X_train, y_train)
+proba = clf.predict_proba(X_test)[:, <span class="s">1</span>]  <span class="c"># ความน่าจะเป็นของคลาส 1</span></pre></details>
+</section>
+
+<!-- 03 ---------------------------------------------------------------->
+<section class="plate" data-plate="3" data-demo="knn">
+  <div class="plate-head"><span class="plate-no">03</span>
+    <div><h2>k-Nearest Neighbors</h2><p class="eyebrow">Supervised · Instance-based · ไม่มีการเทรน</p></div></div>
+  <p class="lede">kNN ไม่ "เรียน" อะไรเลย มันจำข้อมูลทั้งหมดไว้ พอมีจุดใหม่เข้ามาก็ดูเพื่อนบ้านที่ใกล้ที่สุด k ตัวแล้วโหวต — เลื่อนเมาส์บนกราฟเพื่อดูว่าใครคือเพื่อนบ้านของจุดนั้น</p>
+  <div class="stage"><canvas id="cv-knn"></canvas><span class="hint">เลื่อนเมาส์/นิ้ว = ยิงจุดทดสอบ</span></div>
+  <div class="rack">
+    <label>k = <input type="range" id="knn-k" min="1" max="25" step="2" value="5"><span class="val" id="knn-kv">5</span></label>
+    <button data-act="knn-new">สุ่มข้อมูลใหม่</button>
+    <span class="readout" id="knn-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>ระยะทาง</h3><span class="eq">d = √Σ(xᵢ − qᵢ)²</span></div>
+    <div class="note"><h3>k เล็ก vs k ใหญ่</h3><p>k=1 เส้นแบ่งหยักมาก จำ noise (overfit) · k ใหญ่ เส้นเรียบขึ้นแต่กลืนรายละเอียด (underfit)</p></div>
+    <div class="note"><h3>ต้องทำก่อนเสมอ</h3><p>สเกลฟีเจอร์ให้เท่ากัน ไม่งั้นฟีเจอร์ที่หน่วยใหญ่จะครองระยะทางทั้งหมด</p></div>
+    <div class="note"><h3>ต้นทุน</h3><p>เทรน 0 วินาที แต่ทำนายช้าเพราะต้องวัดระยะกับทุกจุด ไม่เหมาะกับข้อมูลใหญ่มาก</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.neighbors <span class="k">import</span> KNeighborsClassifier
+<span class="k">from</span> sklearn.preprocessing <span class="k">import</span> StandardScaler
+X = StandardScaler().fit_transform(X)  <span class="c"># สำคัญมากสำหรับ kNN</span>
+clf = KNeighborsClassifier(n_neighbors=<span class="s">5</span>).fit(X_train, y_train)</pre></details>
+</section>
+
+<!-- 04 ---------------------------------------------------------------->
+<section class="plate" data-plate="4" data-demo="tree">
+  <div class="plate-head"><span class="plate-no">04</span>
+    <div><h2>Decision Tree</h2><p class="eyebrow">Supervised · Gini Impurity · Axis-aligned splits</p></div></div>
+  <p class="lede">ต้นไม้ถามคำถามทีละข้อ เช่น "x &lt; 0.42 ไหม" แล้วแบ่งข้อมูลเป็นสองฝั่ง เลือกคำถามที่ทำให้แต่ละฝั่ง "บริสุทธิ์" ที่สุด เส้นแบ่งจึงตั้งฉากกับแกนเสมอ ทำให้เกิดลายบล็อกแบบนี้</p>
+  <div class="stage"><canvas id="cv-tree"></canvas><span class="hint">ซ้าย = พื้นที่ตัดสินใจ · ขวา = โครงต้นไม้</span></div>
+  <div class="rack">
+    <label>ความลึกสูงสุด <input type="range" id="tree-d" min="1" max="7" value="3"><span class="val" id="tree-dv">3</span></label>
+    <select id="tree-data"><option value="moons">ข้อมูลรูปพระจันทร์</option><option value="blobs">ข้อมูลกระจุก</option><option value="xor">ข้อมูลแบบ XOR</option></select>
+    <button data-act="tree-new">สุ่มใหม่</button>
+    <span class="readout" id="tree-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>เกณฑ์แบ่ง</h3><span class="eq">Gini = 1 − Σ pᵢ²<br>เลือก split ที่ Gini ลดมากสุด</span></div>
+    <div class="note"><h3>ลองเลื่อนดู</h3><p>ลึก 1–3 เส้นแบ่งเรียบง่าย พอลึก 6–7 จะเริ่มเกิดบล็อกเล็ก ๆ ล้อม noise รายจุด นั่นคือ overfitting เห็น ๆ</p></div>
+    <div class="note"><h3>จุดเด่น</h3><p>อธิบายให้คนทั่วไปเข้าใจได้ ไม่ต้องสเกลข้อมูล รับทั้งตัวเลขและหมวดหมู่</p></div>
+    <div class="note"><h3>จุดอ่อน</h3><p>ไม่เสถียร เปลี่ยนข้อมูลนิดเดียวโครงต้นไม้เปลี่ยนหมด — เป็นที่มาของ Random Forest ในแผ่นถัดไป</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.tree <span class="k">import</span> DecisionTreeClassifier, plot_tree
+clf = DecisionTreeClassifier(max_depth=<span class="s">3</span>, criterion=<span class="s">"gini"</span>).fit(X, y)
+plot_tree(clf, filled=<span class="k">True</span>)</pre></details>
+</section>
+
+<!-- 05 ---------------------------------------------------------------->
+<section class="plate" data-plate="5" data-demo="forest">
+  <div class="plate-head"><span class="plate-no">05</span>
+    <div><h2>Random Forest</h2><p class="eyebrow">Supervised · Bagging · Ensemble</p></div></div>
+  <p class="lede">ปลูกต้นไม้หลายต้น แต่ละต้นเห็นข้อมูลคนละชุด (bootstrap) แล้วให้โหวตกัน ต้นเดียวเส้นแบ่งจะแข็งเป็นบล็อก พอรวมหลายต้นขอบจะนุ่มลงเพราะเป็นสัดส่วนคะแนนโหวต — เลื่อนจำนวนต้นไม้ดูความต่าง</p>
+  <div class="stage"><canvas id="cv-forest" class="sq"></canvas><span class="hint">ความเข้มของสี = สัดส่วนต้นไม้ที่โหวตคลาสนั้น</span></div>
+  <div class="rack">
+    <label>จำนวนต้นไม้ <input type="range" id="rf-n" min="1" max="40" value="12"><span class="val" id="rf-nv">12</span></label>
+    <label>ความลึก <input type="range" id="rf-d" min="1" max="7" value="4"><span class="val" id="rf-dv">4</span></label>
+    <button data-act="rf-new">ปลูกป่าใหม่</button>
+    <span class="readout" id="rf-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>ความสุ่ม 2 ชั้น</h3><p>1) สุ่มตัวอย่างแบบมีคืนที่ (bootstrap) 2) สุ่มฟีเจอร์ที่ใช้พิจารณาในแต่ละ node</p></div>
+    <div class="note"><h3>ทำไมถึงดีขึ้น</h3><span class="eq">Var(ค่าเฉลี่ยของ T ต้น) ≈ Var / T<br>(เมื่อต้นไม้ไม่สัมพันธ์กัน)</span></div>
+    <div class="note"><h3>โบนัส</h3><p>ได้ feature importance และ out-of-bag score ฟรีโดยไม่ต้องแยก validation set</p></div>
+    <div class="note"><h3>แลกมาด้วย</h3><p>เสียความ "อธิบายได้" ของต้นไม้เดี่ยว และไฟล์โมเดลใหญ่ขึ้นตามจำนวนต้น</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.ensemble <span class="k">import</span> RandomForestClassifier
+rf = RandomForestClassifier(n_estimators=<span class="s">300</span>, max_depth=<span class="k">None</span>,
+                            oob_score=<span class="k">True</span>, n_jobs=-<span class="s">1</span>).fit(X, y)
+print(rf.oob_score_, rf.feature_importances_)</pre></details>
+</section>
+
+<!-- 06 ---------------------------------------------------------------->
+<section class="plate" data-plate="6" data-demo="svm">
+  <div class="plate-head"><span class="plate-no">06</span>
+    <div><h2>Support Vector Machine</h2><p class="eyebrow">Supervised · Max-margin · Hinge Loss</p></div></div>
+  <p class="lede">SVM ไม่ได้หาเส้นแบ่ง "เส้นไหนก็ได้" แต่หาเส้นที่มี <em>ช่องว่างกว้างที่สุด</em>ระหว่างสองคลาส จุดที่มีวงกลมล้อมคือ support vector — มีแค่จุดพวกนี้ที่กำหนดเส้น จุดอื่นถอดออกได้เลย</p>
+  <div class="stage"><canvas id="cv-svm" class="sq"></canvas><span class="hint">เส้นทึบ = decision boundary · เส้นประ = ขอบ margin</span></div>
+  <div class="rack">
+    <label>C (ความเข้มงวด) <input type="range" id="svm-c" min="1" max="100" value="25"><span class="val" id="svm-cv">1.0</span></label>
+    <select id="svm-data"><option value="sep">แยกกันชัด</option><option value="mix">ซ้อนทับกัน</option></select>
+    <button data-act="svm-new">สุ่มใหม่</button>
+    <span class="readout" id="svm-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>เป้าหมาย</h3><span class="eq">min ½‖w‖² + C·Σ max(0, 1 − yᵢ·f(xᵢ))</span></div>
+    <div class="note"><h3>C คืออะไร</h3><p>C ต่ำ = ยอมให้จุดหลุดเข้ามาในช่องได้ margin กว้าง · C สูง = บังคับให้ถูกทุกจุด margin แคบและเสี่ยง overfit</p></div>
+    <div class="note"><h3>Kernel trick</h3><p>ถ้าข้อมูลแยกด้วยเส้นตรงไม่ได้ ใช้ RBF kernel ยกไปมิติสูงแล้วค่อยตัดด้วยระนาบ</p></div>
+    <div class="note"><h3>เหมาะกับ</h3><p>ข้อมูลมิติสูงแต่ตัวอย่างไม่เยอะ เช่น ข้อความ หรือข้อมูลชีวสารสนเทศ</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.svm <span class="k">import</span> SVC
+clf = SVC(kernel=<span class="s">"rbf"</span>, C=<span class="s">1.0</span>, gamma=<span class="s">"scale"</span>).fit(X, y)
+print(clf.support_vectors_.shape)</pre></details>
+</section>
+
+<!-- 07 ---------------------------------------------------------------->
+<section class="plate" data-plate="7" data-demo="kmeans">
+  <div class="plate-head"><span class="plate-no">07</span>
+    <div><h2>K-Means Clustering</h2><p class="eyebrow">Unsupervised · Lloyd's Algorithm</p></div></div>
+  <p class="lede">ไม่มีเฉลย ไม่มี label — อัลกอริทึมสลับทำสองอย่างวนไป: จับทุกจุดเข้าศูนย์กลางที่ใกล้ที่สุด แล้วย้ายศูนย์กลางไปกลางกลุ่มของตัวเอง กดเดินทีละรอบเพื่อดูศูนย์กลางค่อย ๆ ไถลเข้าที่</p>
+  <div class="stage"><canvas id="cv-kmeans" class="sq"></canvas><span class="hint">กากบาท = centroid · เส้นจาง = เส้นทางที่ centroid เคลื่อนมา</span></div>
+  <div class="rack">
+    <label>k = <input type="range" id="km-k" min="2" max="6" value="3"><span class="val" id="km-kv">3</span></label>
+    <button data-act="km-step">เดิน 1 รอบ</button>
+    <button data-act="km-run">เล่นอัตโนมัติ</button>
+    <button class="ghost" data-act="km-new">สุ่มข้อมูลใหม่</button>
+    <span class="readout" id="km-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>ค่าที่พยายามลด</h3><span class="eq">Inertia = Σ ‖x − μ_c(x)‖²</span></div>
+    <div class="note"><h3>เลือก k ยังไง</h3><p>วาดกราฟ inertia เทียบ k แล้วหา "ข้อศอก" (elbow) หรือใช้ silhouette score ช่วยตัดสิน</p></div>
+    <div class="note"><h3>จุดอ่อน</h3><p>ผลขึ้นกับตำแหน่งเริ่มต้น (จึงมี k-means++) และชอบกลุ่มทรงกลมขนาดพอ ๆ กันเท่านั้น</p></div>
+    <div class="note"><h3>ใช้จริงกับ</h3><p>แบ่งกลุ่มลูกค้า ย่อสีภาพ บีบอัด vector และทำ feature engineering</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.cluster <span class="k">import</span> KMeans
+km = KMeans(n_clusters=<span class="s">3</span>, init=<span class="s">"k-means++"</span>, n_init=<span class="s">10</span>).fit(X)
+labels, centers = km.labels_, km.cluster_centers_</pre></details>
+</section>
+
+<!-- 08 ---------------------------------------------------------------->
+<section class="plate" data-plate="8" data-demo="mlp">
+  <div class="plate-head"><span class="plate-no">08</span>
+    <div><h2>MLP — Multilayer Perceptron</h2><p class="eyebrow">Supervised · Backpropagation · Non-linear</p></div></div>
+  <p class="lede">ซ้อนชั้นเชิงเส้นคั่นด้วยฟังก์ชันไม่เชิงเส้น (tanh) เครือข่ายก็ดัดเส้นแบ่งได้อิสระ ข้อมูลรูปเกลียวนี้ logistic regression ทำไม่ได้เลย แต่ MLP ค่อย ๆ พันเส้นแบ่งตามได้ — ดูแผนภาพขวาประกอบ เส้นหนา = น้ำหนักมาก</p>
+  <div class="stage"><canvas id="cv-mlp"></canvas><span class="hint">ซ้าย = decision boundary · กลาง = โครงข่าย · ขวา = loss</span></div>
+  <div class="rack">
+    <button data-act="mlp-run">เริ่ม / หยุดเทรน</button>
+    <button class="ghost" data-act="mlp-reset">รีเซ็ตน้ำหนัก</button>
+    <label>hidden units <input type="range" id="mlp-h" min="2" max="16" value="8"><span class="val" id="mlp-hv">8</span></label>
+    <label>learning rate <input type="range" id="mlp-lr" min="1" max="50" value="15"><span class="val" id="mlp-lrv">0.15</span></label>
+    <span class="readout" id="mlp-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>Forward</h3><span class="eq">h = tanh(W₁x + b₁)<br>ŷ = σ(W₂h + b₂)</span></div>
+    <div class="note"><h3>Backward</h3><p>ไล่ chain rule จาก loss ย้อนกลับไปทุกน้ำหนัก แล้วขยับสวนทาง gradient</p></div>
+    <div class="note"><h3>ลองสังเกต</h3><p>hidden 2 ตัวมักติดอยู่ที่เส้นตรงหัก ๆ พอเพิ่มเป็น 12–16 ถึงจะพันเกลียวได้ครบ</p></div>
+    <div class="note"><h3>ต่อยอด</h3><p>เพิ่มชั้น เปลี่ยนเป็น ReLU ใส่ dropout / batch norm ก็กลายเป็น deep learning สมัยใหม่</p></div>
+  </div>
+  <details><summary>โค้ด PyTorch</summary><pre><span class="k">import</span> torch.nn <span class="k">as</span> nn
+model = nn.Sequential(nn.Linear(<span class="s">2</span>,<span class="s">16</span>), nn.Tanh(),
+                      nn.Linear(<span class="s">16</span>,<span class="s">16</span>), nn.Tanh(),
+                      nn.Linear(<span class="s">16</span>,<span class="s">1</span>))
+loss_fn, opt = nn.BCEWithLogitsLoss(), torch.optim.Adam(model.parameters(), <span class="s">1e-2</span>)</pre></details>
+</section>
+
+<!-- 09 ---------------------------------------------------------------->
+<section class="plate" data-plate="9" data-demo="cnn">
+  <div class="plate-head"><span class="plate-no">09</span>
+    <div><h2>CNN — Convolutional Neural Network</h2><p class="eyebrow">Deep Learning · Convolution → ReLU → Pooling</p></div></div>
+  <p class="lede">หัวใจของ CNN คือเลื่อนหน้าต่างเล็ก ๆ (kernel) ไปทั่วภาพแล้วคูณ-บวก ได้ feature map ที่ตอบสนองต่อลวดลายบางอย่าง เช่น ขอบแนวตั้ง — <strong>วาดบนตารางซ้ายด้วยเมาส์ได้เลย</strong> แล้วดูผลลัพธ์เปลี่ยนสด ๆ</p>
+  <div class="stage"><canvas id="cv-cnn"></canvas><span class="hint">ลากบนภาพอินพุตเพื่อวาด · คลิกขวา/ลากพร้อม Shift เพื่อลบ</span></div>
+  <div class="rack">
+    <label>kernel <select id="cnn-k">
+      <option value="sobelx">Sobel X — ขอบแนวตั้ง</option>
+      <option value="sobely">Sobel Y — ขอบแนวนอน</option>
+      <option value="blur">Blur — เกลี่ยเรียบ</option>
+      <option value="sharp">Sharpen — เน้นคม</option>
+      <option value="emboss">Emboss — นูน</option></select></label>
+    <button data-act="cnn-anim">เล่นการเลื่อน kernel</button>
+    <button class="ghost" data-act="cnn-clear">ล้างภาพ</button>
+    <button class="ghost" data-act="cnn-preset">ใส่รูปตัวอย่าง</button>
+    <span class="readout" id="cnn-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>การคำนวณ</h3><span class="eq">out(i,j) = Σₘ Σₙ in(i+m, j+n) · K(m,n)</span></div>
+    <div class="note"><h3>ทำไมไม่ใช้ MLP</h3><p>CNN ใช้น้ำหนักร่วมกันทั้งภาพ (weight sharing) พารามิเตอร์น้อยลงมหาศาลและทนต่อการเลื่อนตำแหน่ง</p></div>
+    <div class="note"><h3>ReLU + Pooling</h3><p>ReLU ตัดค่าลบทิ้ง เหลือแต่การตอบสนองเชิงบวก แล้ว max-pool 2×2 ย่อขนาดครึ่งหนึ่งเพื่อสรุปใจความ</p></div>
+    <div class="note"><h3>ของจริง</h3><p>ในโมเดลจริง kernel ไม่ได้ตั้งเอง แต่ถูก <em>เรียนรู้</em> จากข้อมูล และซ้อนกันหลายสิบชั้น</p></div>
+  </div>
+  <details><summary>โค้ด PyTorch</summary><pre><span class="k">import</span> torch.nn <span class="k">as</span> nn
+cnn = nn.Sequential(
+    nn.Conv2d(<span class="s">1</span>, <span class="s">32</span>, kernel_size=<span class="s">3</span>, padding=<span class="s">1</span>), nn.ReLU(), nn.MaxPool2d(<span class="s">2</span>),
+    nn.Conv2d(<span class="s">32</span>, <span class="s">64</span>, kernel_size=<span class="s">3</span>, padding=<span class="s">1</span>), nn.ReLU(), nn.MaxPool2d(<span class="s">2</span>),
+    nn.Flatten(), nn.Linear(<span class="s">64</span>*<span class="s">7</span>*<span class="s">7</span>, <span class="s">10</span>))</pre></details>
+</section>
+
+<!-- 10 ---------------------------------------------------------------->
+<section class="plate" data-plate="10" data-demo="lstm">
+  <div class="plate-head"><span class="plate-no">10</span>
+    <div><h2>LSTM — Long Short-Term Memory</h2><p class="eyebrow">Deep Learning · Sequence · Gated Memory</p></div></div>
+  <p class="lede">RNN ธรรมดาลืมเร็วเพราะ gradient หายไประหว่างย้อนเวลา LSTM แก้ด้วย "สายพานความจำ" (cell state) ที่มีประตูสามบานคอยควบคุมว่าจะลืมอะไร รับอะไรเข้า และปล่อยอะไรออก — ดูแถบประตูขยับตามแต่ละ time step</p>
+  <div class="stage"><canvas id="cv-lstm" class="tall"></canvas><span class="hint">บน = ลำดับอินพุต · ล่างซ้าย = ค่าประตู · ล่างขวา = ความจำ c และเอาต์พุต h</span></div>
+  <div class="rack">
+    <button data-act="lstm-run">เล่น / หยุด</button>
+    <button class="ghost" data-act="lstm-step">ก้าวทีละ step</button>
+    <button class="ghost" data-act="lstm-reset">เริ่มใหม่</button>
+    <span class="readout" id="lstm-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>สามประตู</h3><span class="eq">f = σ(Wf·[h,x])  ลืม
+i = σ(Wi·[h,x])  รับเข้า
+o = σ(Wo·[h,x])  ปล่อยออก</span></div>
+    <div class="note"><h3>อัปเดตความจำ</h3><span class="eq">c = f⊙c_prev + i⊙tanh(g)
+h = o ⊙ tanh(c)</span></div>
+    <div class="note"><h3>ทำไมถึงจำได้ยาว</h3><p>c เดินทางผ่านการคูณ-บวกตรง ๆ ไม่ผ่านฟังก์ชันบีบซ้ำ ๆ gradient จึงไม่ถูกบีบจนหาย</p></div>
+    <div class="note"><h3>ใช้กับ</h3><p>อนุกรมเวลา เสียงพูด ข้อความ และ <em>ลำดับแพ็กเก็ตในทราฟฟิกเครือข่าย</em></p></div>
+  </div>
+  <details><summary>โค้ด PyTorch</summary><pre><span class="k">import</span> torch.nn <span class="k">as</span> nn
+lstm = nn.LSTM(input_size=<span class="s">1</span>, hidden_size=<span class="s">64</span>, num_layers=<span class="s">2</span>, batch_first=<span class="k">True</span>)
+out, (h_n, c_n) = lstm(x)          <span class="c"># x: (batch, seq_len, features)</span>
+pred = nn.Linear(<span class="s">64</span>, <span class="s">1</span>)(out[:, -<span class="s">1</span>])  <span class="c"># ใช้ step สุดท้ายทำนาย</span></pre></details>
+</section>
+
+<!-- 11 ---------------------------------------------------------------->
+<section class="plate" data-plate="11" data-demo="attn">
+  <div class="plate-head"><span class="plate-no">11</span>
+    <div><h2>Transformer — Self-Attention</h2><p class="eyebrow">Deep Learning · Attention · ประมวลผลขนานทั้งลำดับ</p></div></div>
+  <p class="lede">แทนที่จะไล่อ่านทีละคำแบบ LSTM ทุกคำมองเห็นทุกคำพร้อมกัน แล้วให้ "คะแนนความสนใจ" กันเอง ตารางคือ attention matrix — แถวคือคำที่กำลังมอง คอลัมน์คือคำที่ถูกมอง ยิ่งเข้มยิ่งสนใจมาก</p>
+  <div class="stage"><canvas id="cv-attn" class="tall"></canvas><span class="hint">เลื่อนเมาส์บนตารางหรือบนคำ เพื่อดูเส้นเชื่อมความสนใจ</span></div>
+  <div class="rack">
+    <label>ประโยค <select id="attn-s">
+      <option value="0">the cat sat on the mat because it was warm</option>
+      <option value="1">a model learns patterns from data over time</option></select></label>
+    <label>head <select id="attn-h"><option value="0">head 1</option><option value="1">head 2</option><option value="2">head 3</option></select></label>
+    <span class="readout" id="attn-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>สมการหลัก</h3><span class="eq">Attention(Q,K,V) =
+softmax(QKᵀ / √d_k) · V</span></div>
+    <div class="note"><h3>Multi-head</h3><p>ทำหลายหัวขนานกัน แต่ละหัวจับความสัมพันธ์คนละแบบ เช่น หัวหนึ่งจับไวยากรณ์ อีกหัวจับคำอ้างอิง</p></div>
+    <div class="note"><h3>Positional encoding</h3><p>attention ไม่รู้ลำดับเองเลย ต้องบวกสัญญาณตำแหน่งเข้าไปใน embedding ก่อน</p></div>
+    <div class="note"><h3>ข้อแลกเปลี่ยน</h3><p>เร็วเพราะขนานได้เต็มที่ แต่หน่วยความจำโตแบบ O(n²) ตามความยาวลำดับ</p></div>
+  </div>
+  <details><summary>โค้ด PyTorch</summary><pre><span class="k">import</span> torch, torch.nn.functional <span class="k">as</span> F
+scores = Q @ K.transpose(-<span class="s">2</span>, -<span class="s">1</span>) / (d_k ** <span class="s">0.5</span>)
+attn   = F.softmax(scores, dim=-<span class="s">1</span>)
+out    = attn @ V
+<span class="c"># หรือใช้สำเร็จรูป: nn.MultiheadAttention(embed_dim, num_heads)</span></pre></details>
+</section>
+
+<!-- 12 ---------------------------------------------------------------->
+<section class="plate" data-plate="12" data-demo="rl">
+  <div class="plate-head"><span class="plate-no">12</span>
+    <div><h2>Reinforcement Learning — Q-Learning</h2><p class="eyebrow">Reinforcement · Trial and Error · Temporal Difference</p></div></div>
+  <p class="lede">ไม่มีชุดข้อมูลเฉลย มีแต่รางวัล เอเจนต์เดินสุ่มไปเรื่อย ๆ ชนกับดักก็โดนหักคะแนน ถึงเป้าก็ได้แต้ม แล้วค่อย ๆ อัปเดตตาราง Q สีในช่องคือค่าที่เรียนได้ ลูกศรคือนโยบายที่ดีที่สุด ณ ตอนนี้</p>
+  <div class="stage"><canvas id="cv-rl"></canvas><span class="hint">เขียว = เป้าหมาย +1 · แดง = กับดัก −1 · เทา = กำแพง</span></div>
+  <div class="rack">
+    <button data-act="rl-run">เริ่ม / หยุดเรียนรู้</button>
+    <button class="ghost" data-act="rl-reset">ลืมทุกอย่าง</button>
+    <label>ε (สำรวจ) <input type="range" id="rl-e" min="0" max="80" value="25"><span class="val" id="rl-ev">0.25</span></label>
+    <label>ความเร็ว <input type="range" id="rl-sp" min="1" max="40" value="12"><span class="val" id="rl-spv">12</span></label>
+    <span class="readout" id="rl-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>กฎอัปเดต</h3><span class="eq">Q(s,a) ← Q(s,a) + α[ r
+  + γ·max Q(s',a') − Q(s,a) ]</span></div>
+    <div class="note"><h3>Explore vs Exploit</h3><p>ε สูง = เดินสุ่มเยอะ เจอทางใหม่แต่ช้า · ε ต่ำ = รีบใช้ทางที่รู้แล้ว เสี่ยงติดทางที่ไม่ดีที่สุด</p></div>
+    <div class="note"><h3>γ (discount)</h3><p>บอกว่าให้ค่ากับรางวัลอนาคตแค่ไหน ใกล้ 1 = มองยาว ใกล้ 0 = เอาแต้มเฉพาะหน้า</p></div>
+    <div class="note"><h3>ต่อยอด</h3><p>ถ้าสถานะเยอะเกินจะเก็บเป็นตาราง ก็ให้ neural net ประมาณค่า Q แทน → Deep Q-Network</p></div>
+  </div>
+  <details><summary>โค้ด Q-Learning</summary><pre>Q = np.zeros((n_states, n_actions))
+<span class="k">for</span> ep <span class="k">in</span> range(episodes):
+    s = env.reset()
+    <span class="k">while</span> <span class="k">not</span> done:
+        a = env.sample() <span class="k">if</span> rand() &lt; eps <span class="k">else</span> Q[s].argmax()
+        s2, r, done = env.step(a)
+        Q[s, a] += alpha * (r + gamma * Q[s2].max() - Q[s, a])
+        s = s2</pre></details>
+</section>
+
+<!-- 13 ---------------------------------------------------------------->
+<section class="plate" data-plate="13" data-demo="xgb">
+  <div class="plate-head"><span class="plate-no">13</span>
+    <div><h2>XGBoost — Gradient Boosting</h2><p class="eyebrow">Supervised · Boosting · เรียนจากความผิดพลาด</p></div></div>
+  <p class="lede">ต่างจาก Random Forest ที่ปลูกต้นไม้พร้อมกันแล้วโหวต — boosting ปลูก <em>ทีละต้นตามลำดับ</em> โดยต้นใหม่มีหน้าที่แก้ส่วนที่ต้นก่อนหน้าทำพลาด (residual) เลื่อนจำนวนรอบเพื่อดูเส้นทำนายค่อย ๆ เข้ารูป</p>
+  <div class="stage"><canvas id="cv-xgb" class="tall"></canvas><span class="hint">บน = ค่าทำนายรวม · ล่าง = residual ที่เหลือให้ต้นถัดไปแก้</span></div>
+  <div class="rack">
+    <label>จำนวนรอบ <input type="range" id="xgb-n" min="0" max="80" value="10"><span class="val" id="xgb-nv">10</span></label>
+    <label>learning rate <input type="range" id="xgb-lr" min="2" max="60" value="20"><span class="val" id="xgb-lrv">0.20</span></label>
+    <label>ความลึกต้นไม้ <input type="range" id="xgb-d" min="1" max="4" value="2"><span class="val" id="xgb-dv">2</span></label>
+    <button data-act="xgb-new">สุ่มข้อมูลใหม่</button>
+    <span class="readout" id="xgb-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>สูตรสะสม</h3><span class="eq">F₀ = ค่าเฉลี่ย
+Fₘ = Fₘ₋₁ + η · hₘ(x)
+hₘ ฟิตกับ residual ของ Fₘ₋₁</span></div>
+    <div class="note"><h3>learning rate</h3><p>η ต่ำต้องใช้รอบเยอะแต่ได้ผลนุ่มและ generalize ดีกว่า η สูงเข้าเป้าไวแต่กระตุกและ overfit ง่าย</p></div>
+    <div class="note"><h3>ทำไม XGBoost ชนะบ่อย</h3><p>ใส่ regularization ในสูตรโดยตรง ใช้ second-order gradient จัดการ missing value เองและขนานได้</p></div>
+    <div class="note"><h3>สังเกต</h3><p>ตั้งรอบ 80 กับ lr สูง ๆ เส้นจะเริ่มไล่ตาม noise ทีละจุด นั่นคือสัญญาณว่าควรใช้ early stopping</p></div>
+  </div>
+  <details><summary>โค้ด XGBoost</summary><pre><span class="k">import</span> xgboost <span class="k">as</span> xgb
+model = xgb.XGBClassifier(n_estimators=<span class="s">500</span>, learning_rate=<span class="s">0.05</span>,
+                          max_depth=<span class="s">6</span>, subsample=<span class="s">0.8</span>,
+                          early_stopping_rounds=<span class="s">30</span>)
+model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=<span class="k">False</span>)</pre></details>
+</section>
+
+<!-- 14 ---------------------------------------------------------------->
+<section class="plate" data-plate="14" data-demo="stack">
+  <div class="plate-head"><span class="plate-no">14</span>
+    <div><h2>Stacking Ensemble</h2><p class="eyebrow">Supervised · Meta-learning · รวมโมเดลต่างชนิด</p></div></div>
+  <p class="lede">Bagging รวมโมเดลชนิดเดียวกัน แต่ stacking รวม <em>คนละชนิด</em> แล้วให้โมเดลชั้นบน (meta-learner) เรียนรู้เองว่าควรเชื่อใครมากกว่าในสถานการณ์ไหน สามช่องเล็กคือ base model ช่องใหญ่คือผลรวมสุดท้าย</p>
+  <div class="stage"><canvas id="cv-stack" class="tall"></canvas><span class="hint">สามช่องซ้าย = base models · ช่องขวา = meta-learner</span></div>
+  <div class="rack">
+    <button data-act="stack-new">สุ่มข้อมูลใหม่</button>
+    <select id="stack-data"><option value="moons">พระจันทร์ซ้อน</option><option value="xor">XOR</option><option value="circle">วงกลมซ้อน</option></select>
+    <span class="readout" id="stack-out">—</span>
+  </div>
+  <div class="notes">
+    <div class="note"><h3>ขั้นตอน</h3><p>1) เทรน base models ด้วย cross-validation 2) เก็บคำทำนาย out-of-fold เป็นฟีเจอร์ใหม่ 3) เทรน meta-learner บนฟีเจอร์นั้น</p></div>
+    <div class="note"><h3>กฎเหล็ก</h3><p>ต้องใช้คำทำนาย out-of-fold เท่านั้น ถ้าใช้คำทำนายจากข้อมูลที่ base เคยเห็น meta จะได้ข้อมูลรั่วและมั่นใจเกินจริง</p></div>
+    <div class="note"><h3>เลือก base ยังไง</h3><p>เอาโมเดลที่ผิดคนละแบบ เช่น tree + kNN + linear ยิ่งผิดไม่เหมือนกัน ยิ่งรวมแล้วได้กำไร</p></div>
+    <div class="note"><h3>meta ควรเรียบง่าย</h3><p>นิยมใช้ logistic regression เพราะถ้า meta ซับซ้อนเกินจะ overfit คำทำนายของ base ทันที</p></div>
+  </div>
+  <details><summary>โค้ด scikit-learn</summary><pre><span class="k">from</span> sklearn.ensemble <span class="k">import</span> StackingClassifier
+stack = StackingClassifier(
+    estimators=[(<span class="s">"knn"</span>, KNeighborsClassifier(<span class="s">7</span>)),
+                (<span class="s">"tree"</span>, DecisionTreeClassifier(max_depth=<span class="s">5</span>)),
+                (<span class="s">"svm"</span>, SVC(probability=<span class="k">True</span>))],
+    final_estimator=LogisticRegression(), cv=<span class="s">5</span>).fit(X, y)</pre></details>
+</section>
+
+</main>
+</div>
+
+<footer>
+  <hr>
+  <p><strong>หมายเหตุการจัดกลุ่ม:</strong> หน้านี้เรียงลำดับตามใบงาน ในทางวิชาการ CNN / LSTM / Transformer ถือเป็นสถาปัตยกรรม <em>deep learning</em> ที่ปกติเทรนแบบ supervised (หรือ self-supervised) ส่วน K-Means เป็น unsupervised แท้ ๆ — บนหน้าเว็บจึงจัดกลุ่มตามความเป็นจริงไว้ในแถบเมนู เผื่ออาจารย์ถาม</p>
+  <p>ทุกเดโมคำนวณด้วย JavaScript ล้วนบน <code>&lt;canvas&gt;</code> ไม่มีไลบรารีภายนอก เปิดผ่าน GitHub Pages ได้ทันที</p>
+</footer>
+
+<script>
+"use strict";
+/* ============ helpers ============ */
+const C={p1:"#0B6E99",p2:"#CC2F6B",p3:"#DD5606",p4:"#1F7A3D",p5:"#5F3DC4",p6:"#8A6D00",
+         ink:"#0E1D29",dim:"#5B7285",rule:"#C6D3DC",hair:"#E4EBF0"};
+const CLS=[C.p1,C.p2,C.p6];
+function stage(id){
+  const c=document.getElementById(id);
+  const dpr=Math.min(2,window.devicePixelRatio||1);
+  const r=c.getBoundingClientRect();
+  const w=Math.max(320,r.width), h=Math.max(200,r.height);
+  c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
+  const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
+  g.clearRect(0,0,w,h);
+  return {c,g,w,h};
+}
+function rng(seed){let s=seed%2147483647; if(s<=0)s+=2147483646;
+  return ()=>{s=(s*16807)%2147483647; return (s-1)/2147483646;};}
+function gauss(R){let u=0,v=0; while(!u)u=R(); while(!v)v=R();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function grid(g,x,y,w,h,n){
+  g.save(); g.strokeStyle=C.hair; g.lineWidth=1;
+  for(let i=0;i<=n;i++){const t=i/n;
+    g.beginPath(); g.moveTo(x+t*w+.5,y); g.lineTo(x+t*w+.5,y+h); g.stroke();
+    g.beginPath(); g.moveTo(x,y+t*h+.5); g.lineTo(x+w,y+t*h+.5); g.stroke();}
+  g.strokeStyle=C.rule; g.strokeRect(x+.5,y+.5,w,h); g.restore();
+}
+function label(g,t,x,y,col,size,align){
+  g.save(); g.fillStyle=col||C.dim; g.font=(size||11)+"px 'IBM Plex Mono','IBM Plex Sans Thai',monospace";
+  g.textAlign=align||"left"; g.textBaseline="alphabetic"; g.fillText(t,x,y); g.restore();
+}
+function dot(g,x,y,r,fill,stroke){
+  g.beginPath(); g.arc(x,y,r,0,6.2832); g.fillStyle=fill; g.fill();
+  if(stroke){g.strokeStyle=stroke; g.lineWidth=1.2; g.stroke();}
+}
+function hex2rgba(h,a){const n=parseInt(h.slice(1),16);
+  return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
+function pointerPos(c,e){const r=c.getBoundingClientRect();
+  const p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top};}
+
+/* animation registry */
+const RAF={};
+function loop(name,fn){stop(name); const step=()=>{fn(); RAF[name]=requestAnimationFrame(step);};
+  RAF[name]=requestAnimationFrame(step);}
+function stop(name){if(RAF[name]){cancelAnimationFrame(RAF[name]); RAF[name]=null;}}
+function stopAll(){Object.keys(RAF).forEach(stop);}
+
+/* ============ shared datasets ============ */
+function makeMoons(n,noise,R){
+  const P=[];
+  for(let i=0;i<n;i++){
+    const t=Math.PI*i/(n-1);
+    P.push({x:.32+.30*Math.cos(t)+noise*gauss(R), y:.62-.30*Math.sin(t)+noise*gauss(R), l:0});
+    P.push({x:.68-.30*Math.cos(t)+noise*gauss(R), y:.38+.30*Math.sin(t)+noise*gauss(R), l:1});
+  }
+  return P.map(p=>({x:Math.min(.98,Math.max(.02,p.x)),y:Math.min(.98,Math.max(.02,p.y)),l:p.l}));
+}
+function makeBlobs(nPer,centers,R,spread){
+  const P=[];
+  centers.forEach((c,i)=>{for(let k=0;k<nPer;k++)
+    P.push({x:Math.min(.97,Math.max(.03,c[0]+(spread||.09)*gauss(R))),
+            y:Math.min(.97,Math.max(.03,c[1]+(spread||.09)*gauss(R))),l:i});});
+  return P;
+}
+function makeXor(n,R){
+  const P=[];
+  for(let i=0;i<n;i++){const x=R(),y=R();
+    P.push({x,y,l:((x>.5)!==(y>.5))?1:0});}
+  return P;
+}
+function makeCircles(n,R){
+  const P=[];
+  for(let i=0;i<n;i++){
+    const a=R()*6.2832, r1=.12+.06*R(), r2=.34+.06*R();
+    P.push({x:.5+r1*Math.cos(a),y:.5+r1*Math.sin(a),l:0});
+    P.push({x:.5+r2*Math.cos(a),y:.5+r2*Math.sin(a),l:1});
+  }
+  return P;
+}
+function makeSpiral(n,R){
+  const P=[];
+  for(let i=0;i<n;i++){
+    const t=i/n*3.4, r=.04+.145*t;
+    for(let c=0;c<2;c++){
+      const a=t*1.75+c*Math.PI+.14*gauss(R);
+      P.push({x:.5+r*Math.cos(a),y:.5+r*Math.sin(a),l:c});
+    }
+  }
+  return P;
+}
+
+/* ============ shared models ============ */
+function gini(counts,n){let s=0; for(const c of counts){const p=c/n; s+=p*p;} return 1-s;}
+function buildTree(pts,depth,maxDepth,nc,featSub,R){
+  const n=pts.length;
+  const cnt=new Array(nc).fill(0); pts.forEach(p=>cnt[p.l]++);
+  const maj=cnt.indexOf(Math.max(...cnt));
+  const probs=cnt.map(c=>c/Math.max(1,n));
+  if(depth>=maxDepth||n<4||cnt[maj]===n) return {leaf:true,cls:maj,probs};
+  let best=null;
+  const dims = featSub ? (R()<.5?["x"]:["y"]) : ["x","y"];
+  for(const d of dims){
+    const vals=pts.map(p=>p[d]).sort((a,b)=>a-b);
+    const tries=Math.min(24,vals.length-1);
+    for(let i=1;i<=tries;i++){
+      const idx=Math.floor(i*(vals.length-1)/(tries+1));
+      const th=(vals[idx]+vals[idx+1])/2;
+      const L=[],Rt=[];
+      for(const p of pts)(p[d]<th?L:Rt).push(p);
+      if(L.length<2||Rt.length<2) continue;
+      const cl=new Array(nc).fill(0),cr=new Array(nc).fill(0);
+      L.forEach(p=>cl[p.l]++); Rt.forEach(p=>cr[p.l]++);
+      const sc=(L.length*gini(cl,L.length)+Rt.length*gini(cr,Rt.length))/n;
+      if(!best||sc<best.sc) best={sc,d,th,L,R:Rt};
+    }
+  }
+  if(!best) return {leaf:true,cls:maj,probs};
+  return {leaf:false,d:best.d,th:best.th,
+    left:buildTree(best.L,depth+1,maxDepth,nc,featSub,R),
+    right:buildTree(best.R,depth+1,maxDepth,nc,featSub,R)};
+}
+function treeProbs(t,x,y){
+  while(!t.leaf) t = ((t.d==="x"?x:y) < t.th) ? t.left : t.right;
+  return t.probs;
+}
+function treePredict(t,x,y){const p=treeProbs(t,x,y); return p.indexOf(Math.max(...p));}
+function treeDepth(t){return t.leaf?1:1+Math.max(treeDepth(t.left),treeDepth(t.right));}
+function treeLeaves(t){return t.leaf?1:treeLeaves(t.left)+treeLeaves(t.right);}
+
+function trainLogreg(pts,epochs,lr){
+  let w1=0,w2=0,b=0;
+  for(let e=0;e<epochs;e++){
+    let g1=0,g2=0,gb=0;
+    for(const p of pts){
+      const z=w1*p.x+w2*p.y+b, s=1/(1+Math.exp(-z)), d=s-p.l;
+      g1+=d*p.x; g2+=d*p.y; gb+=d;
+    }
+    const n=Math.max(1,pts.length);
+    w1-=lr*g1/n; w2-=lr*g2/n; b-=lr*gb/n;
+  }
+  return {w1,w2,b};
+}
+
+/* ============ 01 LINEAR REGRESSION ============ */
+const D={};
+D.linreg=function(){
+  const S=stage("cv-linreg"), g=S.g;
+  const pad={l:52,r:22,t:22,b:38};
+  const gw=S.w-pad.l-pad.r, gh=S.h-pad.t-pad.b;
+  const st={pts:[],res:true};
+  const px=x=>pad.l+x*gw, py=y=>pad.t+(1-y)*gh;
+  const R=rng(7);
+  function gen(){st.pts=[];
+    const a=.55+.5*R(), b=.15+.2*R();
+    for(let i=0;i<26;i++){const x=.04+.92*R();
+      st.pts.push({x,y:Math.min(.98,Math.max(.02,a*x+b+.09*gauss(R)))});}}
+  function fit(){
+    const n=st.pts.length; if(n<2) return null;
+    let sx=0,sy=0; st.pts.forEach(p=>{sx+=p.x;sy+=p.y;});
+    const mx=sx/n,my=sy/n; let num=0,den=0;
+    st.pts.forEach(p=>{num+=(p.x-mx)*(p.y-my); den+=(p.x-mx)**2;});
+    if(Math.abs(den)<1e-9) return null;
+    const w=num/den,b=my-w*mx;
+    let ss=0,tt=0; st.pts.forEach(p=>{const e=p.y-(w*p.x+b); ss+=e*e; tt+=(p.y-my)**2;});
+    return {w,b,mse:ss/n,r2:tt>1e-9?1-ss/tt:0};
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    grid(g,pad.l,pad.t,gw,gh,10);
+    label(g,"y",pad.l-34,pad.t+12); label(g,"x",pad.l+gw,pad.t+gh+26,C.dim,11,"end");
+    for(let i=0;i<=5;i++){label(g,(i/5).toFixed(1),pad.l-9,py(i/5)+4,C.dim,10,"end");
+      label(g,(i/5).toFixed(1),px(i/5),pad.t+gh+18,C.dim,10,"center");}
+    const m=fit();
+    if(m&&st.res){
+      g.strokeStyle=hex2rgba(C.p3,.65); g.lineWidth=1.4;
+      st.pts.forEach(p=>{g.beginPath(); g.moveTo(px(p.x),py(p.y));
+        g.lineTo(px(p.x),py(m.w*p.x+m.b)); g.stroke();});
+    }
+    if(m){
+      g.strokeStyle=C.p1; g.lineWidth=2.6; g.beginPath();
+      g.moveTo(px(0),py(m.b)); g.lineTo(px(1),py(m.w+m.b)); g.stroke();
+    }
+    st.pts.forEach(p=>dot(g,px(p.x),py(p.y),4.4,"#fff",C.ink));
+    st.pts.forEach(p=>dot(g,px(p.x),py(p.y),2.2,C.ink));
+    const out=document.getElementById("linreg-out");
+    out.textContent = m ? `ŷ = ${m.w.toFixed(3)}·x + ${m.b.toFixed(3)}  ·  R² = ${m.r2.toFixed(3)}  ·  MSE = ${m.mse.toFixed(4)}  ·  n = ${st.pts.length}`
+                        : `ต้องมีอย่างน้อย 2 จุด (ตอนนี้ ${st.pts.length})`;
+  }
+  S.c.onclick=e=>{const p=pointerPos(S.c,e);
+    const x=(p.x-pad.l)/gw, y=1-(p.y-pad.t)/gh;
+    if(x>=0&&x<=1&&y>=0&&y<=1){st.pts.push({x,y}); draw();}};
+  document.querySelector('[data-act="linreg-noise"]').onclick=()=>{gen();draw();};
+  document.querySelector('[data-act="linreg-clear"]').onclick=()=>{st.pts=[];draw();};
+  document.getElementById("linreg-res").onchange=e=>{st.res=e.target.checked;draw();};
+  gen(); draw();
+};
+
+/* ============ 02 LOGISTIC REGRESSION ============ */
+D.logreg=function(){
+  const S=stage("cv-logreg"), g=S.g;
+  const pad=24, gw=S.w-pad*2, gh=S.h-pad*2;
+  const px=x=>pad+x*gw, py=y=>pad+(1-y)*gh;
+  const R=rng(21);
+  let pts=[], m={w1:0,w2:0,b:0}, lr=.25;
+  function gen(){pts=makeBlobs(30,[[.32,.62],[.7,.34]],R,.11);}
+  function train(){m=trainLogreg(pts,900,lr*4);}
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const s=6;
+    for(let i=pad;i<pad+gw;i+=s)for(let j=pad;j<pad+gh;j+=s){
+      const x=(i-pad)/gw, y=1-(j-pad)/gh;
+      const p=1/(1+Math.exp(-(m.w1*x+m.w2*y+m.b)));
+      g.fillStyle = p>.5 ? hex2rgba(C.p2,(p-.5)*.55) : hex2rgba(C.p1,(.5-p)*.55);
+      g.fillRect(i,j,s,s);
+    }
+    grid(g,pad,pad,gw,gh,10);
+    if(Math.abs(m.w2)>1e-6){
+      g.strokeStyle=C.ink; g.lineWidth=2.4; g.beginPath();
+      const y0=-(m.w1*0+m.b)/m.w2, y1=-(m.w1*1+m.b)/m.w2;
+      g.moveTo(px(0),py(y0)); g.lineTo(px(1),py(y1)); g.stroke();
+    }
+    let ok=0;
+    pts.forEach(p=>{
+      const pr=1/(1+Math.exp(-(m.w1*p.x+m.w2*p.y+m.b)));
+      if((pr>.5?1:0)===p.l) ok++;
+      dot(g,px(p.x),py(p.y),5,CLS[p.l],"#fff");
+    });
+    document.getElementById("logreg-out").textContent =
+      `w = [${m.w1.toFixed(2)}, ${m.w2.toFixed(2)}]  b = ${m.b.toFixed(2)}  ·  ความแม่น ${(100*ok/Math.max(1,pts.length)).toFixed(1)}%`;
+  }
+  S.c.onclick=e=>{const p=pointerPos(S.c,e);
+    const x=(p.x-pad)/gw, y=1-(p.y-pad)/gh;
+    if(x>=0&&x<=1&&y>=0&&y<=1){
+      pts.push({x,y,l:+document.getElementById("logreg-cls").value}); train(); draw();}};
+  document.querySelector('[data-act="logreg-train"]').onclick=()=>{gen();train();draw();};
+  document.getElementById("logreg-lr").oninput=e=>{
+    lr=e.target.value/100; document.getElementById("logreg-lrv").textContent=lr.toFixed(2);
+    train(); draw();};
+  gen(); train(); draw();
+};
+
+/* ============ 03 kNN ============ */
+D.knn=function(){
+  const S=stage("cv-knn"), g=S.g;
+  const pad=24, gw=S.w-pad*2, gh=S.h-pad*2;
+  const px=x=>pad+x*gw, py=y=>pad+(1-y)*gh;
+  let R=rng(33), pts=[], k=5, q=null, field=null;
+  function gen(){pts=makeBlobs(22,[[.28,.7],[.72,.66],[.5,.25]],R,.11); field=null;}
+  function nearest(x,y,kk){
+    return pts.map(p=>({p,d:(p.x-x)**2+(p.y-y)**2}))
+              .sort((a,b)=>a.d-b.d).slice(0,kk);
+  }
+  function vote(nb){const c=[0,0,0]; nb.forEach(n=>c[n.p.l]++); return c;}
+  function buildField(){
+    const s=7; field=[];
+    for(let i=0;i<gw;i+=s)for(let j=0;j<gh;j+=s){
+      const c=vote(nearest(i/gw,1-j/gh,k));
+      field.push({i,j,s,l:c.indexOf(Math.max(...c))});
+    }
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    if(!field) buildField();
+    field.forEach(f=>{g.fillStyle=hex2rgba(CLS[f.l],.17); g.fillRect(pad+f.i,pad+f.j,f.s,f.s);});
+    grid(g,pad,pad,gw,gh,10);
+    if(q){
+      const nb=nearest(q.x,q.y,k), c=vote(nb);
+      const far=Math.sqrt(nb[nb.length-1].d);
+      g.strokeStyle=hex2rgba(C.ink,.35); g.setLineDash([4,4]); g.lineWidth=1.2;
+      g.beginPath(); g.arc(px(q.x),py(q.y),far*gw,0,6.2832); g.stroke(); g.setLineDash([]);
+      nb.forEach(n=>{g.strokeStyle=hex2rgba(CLS[n.p.l],.85); g.lineWidth=1.6;
+        g.beginPath(); g.moveTo(px(q.x),py(q.y)); g.lineTo(px(n.p.x),py(n.p.y)); g.stroke();});
+      const win=c.indexOf(Math.max(...c));
+      document.getElementById("knn-out").textContent =
+        `โหวต A:${c[0]} B:${c[1]} C:${c[2]} → คลาส ${["A","B","C"][win]}`;
+    } else document.getElementById("knn-out").textContent="เลื่อนเมาส์เข้ามาในกราฟ";
+    pts.forEach(p=>dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff"));
+    if(q){
+      g.strokeStyle=C.ink; g.lineWidth=2.4;
+      g.beginPath(); g.moveTo(px(q.x)-8,py(q.y)); g.lineTo(px(q.x)+8,py(q.y));
+      g.moveTo(px(q.x),py(q.y)-8); g.lineTo(px(q.x),py(q.y)+8); g.stroke();
+    }
+  }
+  const move=e=>{const p=pointerPos(S.c,e);
+    const x=(p.x-pad)/gw, y=1-(p.y-pad)/gh;
+    q=(x>=0&&x<=1&&y>=0&&y<=1)?{x,y}:null; draw();};
+  S.c.onmousemove=move; S.c.ontouchmove=e=>{e.preventDefault(); move(e);};
+  S.c.onmouseleave=()=>{q=null;draw();};
+  document.getElementById("knn-k").oninput=e=>{k=+e.target.value;
+    document.getElementById("knn-kv").textContent=k; field=null; draw();};
+  document.querySelector('[data-act="knn-new"]').onclick=()=>{gen();draw();};
+  gen(); draw();
+};
+
+/* ============ 04 DECISION TREE ============ */
+D.tree=function(){
+  const S=stage("cv-tree"), g=S.g;
+  const gap=16, bw=Math.min(S.h-40,(S.w-gap)*.52), left=20;
+  const gw=bw, gh=bw, tx=left+gw+gap*2, tw=S.w-tx-16;
+  const px=x=>left+x*gw, py=y=>20+(1-y)*gh;
+  let R=rng(5), pts=[], t=null, depth=3, kind="moons";
+  function gen(){
+    R=rng(Math.floor(Math.random()*1e6)+1);
+    pts = kind==="moons"?makeMoons(38,.030,R) : kind==="xor"?makeXor(140,R) : makeBlobs(45,[[.3,.7],[.7,.3]],R,.12);
+    build();
+  }
+  function build(){t=buildTree(pts,0,depth,2,false,R);}
+  const maxDraw=()=>tw>320?4:3;
+  function drawNode(node,x,y,w,lvl){
+    const cellH=Math.min(38,(S.h-60)/Math.max(2,Math.min(depth,maxDraw())+1));
+    if(!node.leaf && lvl>=maxDraw()){
+      g.fillStyle="#fff"; g.strokeStyle=hex2rgba(C.dim,.8); g.lineWidth=1;
+      g.fillRect(x-11,y-8,22,16); g.strokeRect(x-11.5,y-8.5,23,17);
+      label(g,"…",x,y+5,C.dim,12,"center");
+      return;
+    }
+    if(node.leaf){
+      const cls=node.cls;
+      g.fillStyle=hex2rgba(CLS[cls],.85); g.fillRect(x-13,y-9,26,18);
+      g.strokeStyle=C.ink; g.lineWidth=1; g.strokeRect(x-13.5,y-9.5,27,19);
+      label(g,["A","B"][cls],x,y+4,"#fff",11,"center");
+      return;
+    }
+    g.fillStyle="#fff"; g.strokeStyle=C.ink; g.lineWidth=1.2;
+    g.fillRect(x-30,y-10,60,20); g.strokeRect(x-30.5,y-10.5,61,21);
+    label(g,`${node.d}<${node.th.toFixed(2)}`,x,y+4,C.ink,9.5,"center");
+    const ny=y+cellH, q=w/2;
+    g.strokeStyle=hex2rgba(C.dim,.7); g.lineWidth=1;
+    [[-1,node.left],[1,node.right]].forEach(([s,ch])=>{
+      const nx=x+s*q/2;
+      g.beginPath(); g.moveTo(x,y+10); g.lineTo(nx,ny-10); g.stroke();
+      drawNode(ch,nx,ny,q,lvl+1);
+    });
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const s=5;
+    for(let i=0;i<gw;i+=s)for(let j=0;j<gh;j+=s){
+      const c=treePredict(t,i/gw,1-j/gh);
+      g.fillStyle=hex2rgba(CLS[c],.2); g.fillRect(left+i,20+j,s,s);
+    }
+    grid(g,left,20,gw,gh,10);
+    let ok=0;
+    pts.forEach(p=>{if(treePredict(t,p.x,p.y)===p.l)ok++;
+      dot(g,px(p.x),py(p.y),3.8,CLS[p.l],"#fff");});
+    label(g,"DECISION REGIONS",left,S.h-8,C.dim,10);
+    label(g,treeDepth(t)-1>maxDraw()?"TREE (แสดง "+maxDraw()+" ชั้นแรก)":"TREE STRUCTURE",tx,S.h-8,C.dim,10);
+    drawNode(t,tx+tw/2,32,tw*.92,0);
+    document.getElementById("tree-out").textContent =
+      `ลึกจริง ${treeDepth(t)-1} · ใบ ${treeLeaves(t)} · ความแม่นบนชุดเทรน ${(100*ok/pts.length).toFixed(1)}%`;
+  }
+  document.getElementById("tree-d").oninput=e=>{depth=+e.target.value;
+    document.getElementById("tree-dv").textContent=depth; build(); draw();};
+  document.getElementById("tree-data").onchange=e=>{kind=e.target.value; gen(); draw();};
+  document.querySelector('[data-act="tree-new"]').onclick=()=>{gen();draw();};
+  gen(); draw();
+};
+
+/* ============ 05 RANDOM FOREST ============ */
+D.forest=function(){
+  const S=stage("cv-forest"), g=S.g;
+  const pad=22, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
+  const px=x=>left+x*side, py=y=>pad+(1-y)*side;
+  let R=rng(11), pts=[], trees=[], nT=12, dep=4;
+  function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeMoons(40,.035,R); build();}
+  function build(){
+    trees=[];
+    for(let i=0;i<nT;i++){
+      const bag=[]; for(let k=0;k<pts.length;k++) bag.push(pts[Math.floor(R()*pts.length)]);
+      trees.push(buildTree(bag,0,dep,2,true,R));
+    }
+  }
+  function vote(x,y){let s=0; trees.forEach(t=>{s+=treeProbs(t,x,y)[1];}); return s/trees.length;}
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const s=5;
+    for(let i=0;i<side;i+=s)for(let j=0;j<side;j+=s){
+      const p=vote(i/side,1-j/side);
+      g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.65):hex2rgba(C.p1,(.5-p)*.65);
+      g.fillRect(left+i,pad+j,s,s);
+    }
+    grid(g,left,pad,side,side,10);
+    let ok=0;
+    pts.forEach(p=>{if((vote(p.x,p.y)>.5?1:0)===p.l)ok++;
+      dot(g,px(p.x),py(p.y),4.2,CLS[p.l],"#fff");});
+    document.getElementById("rf-out").textContent =
+      `${nT} ต้น · ลึก ${dep} · ความแม่น ${(100*ok/pts.length).toFixed(1)}%`;
+  }
+  document.getElementById("rf-n").oninput=e=>{nT=+e.target.value;
+    document.getElementById("rf-nv").textContent=nT; build(); draw();};
+  document.getElementById("rf-d").oninput=e=>{dep=+e.target.value;
+    document.getElementById("rf-dv").textContent=dep; build(); draw();};
+  document.querySelector('[data-act="rf-new"]').onclick=()=>{gen();draw();};
+  gen(); draw();
+};
+
+/* ============ 06 SVM ============ */
+D.svm=function(){
+  const S=stage("cv-svm"), g=S.g;
+  const pad=24, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
+  const px=x=>left+x*side, py=y=>pad+(1-y)*side;
+  let R=rng(3), pts=[], w=[0,0], b=0, Cc=1, kind="sep";
+  function gen(){
+    R=rng(Math.floor(Math.random()*1e6)+1);
+    const sp = kind==="sep"?.075:.135;
+    pts=makeBlobs(26,[[.3,.68],[.7,.34]],R,sp).map(p=>({x:p.x,y:p.y,l:p.l,s:p.l?1:-1}));
+    train();
+  }
+  // Pegasos: หน่วยของฟีเจอร์ถูกเลื่อนไปช่วง [-1,1] ก่อนเทรน
+  const u=v=>(v-.5)*2;
+  function train(){
+    w=[0,0]; b=0;
+    const n=pts.length, lam=1/(Cc*n), T=20000;
+    for(let t=1;t<=T;t++){
+      const eta=1/(lam*t), p=pts[Math.floor(R()*n)];
+      const m=p.s*(w[0]*u(p.x)+w[1]*u(p.y)+b), d=1-eta*lam;
+      w[0]*=d; w[1]*=d;
+      if(m<1){ w[0]+=eta*p.s*u(p.x); w[1]+=eta*p.s*u(p.y); b+=eta*p.s*.35; }
+    }
+  }
+  function f(x,y){return w[0]*u(x)+w[1]*u(y)+b;}
+  function drawLine(off,style){
+    if(Math.abs(w[1])<1e-6) return;
+    const yAt=x=>(((off-b-w[0]*u(x))/w[1])+1)/2;
+    const y0=yAt(0), y1=yAt(1);
+    g.save(); g.setLineDash(style==="dash"?[6,5]:[]);
+    g.strokeStyle=style==="dash"?hex2rgba(C.ink,.45):C.ink;
+    g.lineWidth=style==="dash"?1.3:2.4;
+    g.beginPath(); g.moveTo(px(0),py(y0)); g.lineTo(px(1),py(y1)); g.stroke(); g.restore();
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const s=6;
+    for(let i=0;i<side;i+=s)for(let j=0;j<side;j+=s){
+      const v=f(i/side,1-j/side);
+      const a=Math.min(.45,Math.abs(v)*.16);
+      g.fillStyle = v>0?hex2rgba(C.p2,a):hex2rgba(C.p1,a);
+      g.fillRect(left+i,pad+j,s,s);
+    }
+    grid(g,left,pad,side,side,10);
+    drawLine(0); drawLine(1,"dash"); drawLine(-1,"dash");
+    let sv=0, ok=0;
+    pts.forEach(p=>{
+      const m=p.s*f(p.x,p.y);
+      if(m>0) ok++;
+      if(m<1.0){sv++;
+        g.beginPath(); g.arc(px(p.x),py(p.y),9,0,6.2832);
+        g.strokeStyle=C.p4; g.lineWidth=2; g.stroke();}
+      dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff");
+    });
+    const marg = 1/Math.max(1e-6,Math.hypot(w[0],w[1]));
+    document.getElementById("svm-out").textContent =
+      `ความกว้าง margin ≈ ${marg.toFixed(3)} · support vector ${sv}/${pts.length} จุด · ความแม่น ${(100*ok/pts.length).toFixed(1)}%`;
+  }
+  document.getElementById("svm-c").oninput=e=>{Cc=e.target.value/25;
+    document.getElementById("svm-cv").textContent=Cc.toFixed(2); train(); draw();};
+  document.getElementById("svm-data").onchange=e=>{kind=e.target.value; gen(); draw();};
+  document.querySelector('[data-act="svm-new"]').onclick=()=>{gen();draw();};
+  gen(); draw();
+};
+
+/* ============ 07 K-MEANS ============ */
+D.kmeans=function(){
+  const S=stage("cv-kmeans"), g=S.g;
+  const pad=24, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
+  const px=x=>left+x*side, py=y=>pad+(1-y)*side;
+  const PAL=[C.p1,C.p2,C.p6,C.p4,C.p5,C.p3];
+  let R=rng(9), pts=[], k=3, cent=[], trail=[], iter=0, running=false, tick=0;
+  function gen(){
+    R=rng(Math.floor(Math.random()*1e6)+1);
+    pts=makeBlobs(34,[[.26,.72],[.72,.7],[.5,.24],[.82,.4]],R,.085).map(p=>({x:p.x,y:p.y,c:0}));
+    init();
+  }
+  function init(){
+    cent=[]; trail=[]; iter=0;
+    for(let i=0;i<k;i++){const p=pts[Math.floor(R()*pts.length)];
+      cent.push({x:p.x+.05*gauss(R),y:p.y+.05*gauss(R)}); trail.push([{x:cent[i].x,y:cent[i].y}]);}
+    assign();
+  }
+  function assign(){
+    let inertia=0;
+    pts.forEach(p=>{let bi=0,bd=1e9;
+      cent.forEach((c,i)=>{const d=(p.x-c.x)**2+(p.y-c.y)**2; if(d<bd){bd=d;bi=i;}});
+      p.c=bi; inertia+=bd;});
+    return inertia;
+  }
+  function step(){
+    const sums=cent.map(()=>({x:0,y:0,n:0}));
+    pts.forEach(p=>{sums[p.c].x+=p.x; sums[p.c].y+=p.y; sums[p.c].n++;});
+    let moved=0;
+    cent.forEach((c,i)=>{if(sums[i].n){
+      const nx=sums[i].x/sums[i].n, ny=sums[i].y/sums[i].n;
+      moved+=Math.hypot(nx-c.x,ny-c.y); c.x=nx; c.y=ny; trail[i].push({x:nx,y:ny});}});
+    const inertia=assign(); iter++;
+    if(moved<1e-4) running=false;
+    return inertia;
+  }
+  function draw(inertia){
+    g.clearRect(0,0,S.w,S.h);
+    grid(g,left,pad,side,side,10);
+    cent.forEach((c,i)=>{
+      g.strokeStyle=hex2rgba(PAL[i],.4); g.lineWidth=1.4; g.beginPath();
+      trail[i].forEach((t,j)=>j?g.lineTo(px(t.x),py(t.y)):g.moveTo(px(t.x),py(t.y)));
+      g.stroke();
+      g.strokeStyle=hex2rgba(PAL[i],.28); g.lineWidth=1;
+      pts.filter(p=>p.c===i).forEach(p=>{g.beginPath();
+        g.moveTo(px(p.x),py(p.y)); g.lineTo(px(c.x),py(c.y)); g.stroke();});
+    });
+    pts.forEach(p=>dot(g,px(p.x),py(p.y),4.2,PAL[p.c],"#fff"));
+    cent.forEach((c,i)=>{
+      g.strokeStyle="#fff"; g.lineWidth=5;
+      g.beginPath(); g.moveTo(px(c.x)-9,py(c.y)); g.lineTo(px(c.x)+9,py(c.y));
+      g.moveTo(px(c.x),py(c.y)-9); g.lineTo(px(c.x),py(c.y)+9); g.stroke();
+      g.strokeStyle=PAL[i]; g.lineWidth=3; g.stroke();
+    });
+    document.getElementById("km-out").textContent =
+      `รอบที่ ${iter} · inertia = ${(inertia!==undefined?inertia:assign()).toFixed(4)}`;
+  }
+  document.querySelector('[data-act="km-step"]').onclick=()=>{running=false;stop("km");draw(step());};
+  document.querySelector('[data-act="km-run"]').onclick=()=>{
+    running=!running;
+    if(running){tick=0; loop("km",()=>{if(++tick%28===0){draw(step()); if(!running)stop("km");}});}
+    else stop("km");
+  };
+  document.querySelector('[data-act="km-new"]').onclick=()=>{running=false;stop("km");gen();draw();};
+  document.getElementById("km-k").oninput=e=>{k=+e.target.value;
+    document.getElementById("km-kv").textContent=k; running=false; stop("km"); init(); draw();};
+  gen(); draw();
+};
+
+/* ============ 08 MLP ============ */
+D.mlp=function(){
+  const S=stage("cv-mlp"), g=S.g;
+  const pad=18;
+  const bw=Math.min(S.h-pad*2, S.w*.52), bx=pad, by=pad;
+  const nx=bx+bw+26, nw=Math.max(90,S.w-nx-pad);
+  const netH=bw*.62;
+  const lx=nx, lw=nw, ly=by+netH+48, lh=Math.max(46,by+bw-ly);
+  const px=x=>bx+x*bw, py=y=>by+(1-y)*bw;
+  let R=rng(17), pts=[], H=8, lr=.15, running=false;
+  let W1,b1,W2,b2,W3,b3, losses=[], ep=0;
+  function initNet(){
+    const r=()=>gauss(R)*0.9;
+    W1=Array.from({length:H},()=>[r(),r()]); b1=new Array(H).fill(0);
+    W2=Array.from({length:H},()=>Array.from({length:H},r)); b2=new Array(H).fill(0);
+    W3=Array.from({length:H},r); b3=0; losses=[]; ep=0;
+  }
+  function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeSpiral(48,R); initNet();}
+  function fwd(x,y){
+    const inp=[(x-.5)*3,(y-.5)*3];
+    const h1=W1.map((w,i)=>Math.tanh(w[0]*inp[0]+w[1]*inp[1]+b1[i]));
+    const h2=W2.map((w,i)=>Math.tanh(w.reduce((s,v,j)=>s+v*h1[j],0)+b2[i]));
+    const z=W3.reduce((s,v,j)=>s+v*h2[j],0)+b3;
+    return {inp,h1,h2,out:1/(1+Math.exp(-z))};
+  }
+  function trainEpoch(){
+    const n=pts.length; let L=0;
+    const gW1=W1.map(w=>[0,0]), gb1=new Array(H).fill(0);
+    const gW2=W2.map(w=>w.map(()=>0)), gb2=new Array(H).fill(0);
+    const gW3=new Array(H).fill(0); let gb3=0;
+    for(const p of pts){
+      const {inp,h1,h2,out}=fwd(p.x,p.y);
+      const e=1e-9;
+      L+= -(p.l*Math.log(out+e)+(1-p.l)*Math.log(1-out+e));
+      const d3=out-p.l;
+      for(let i=0;i<H;i++){gW3[i]+=d3*h2[i];} gb3+=d3;
+      const d2=h2.map((v,i)=>d3*W3[i]*(1-v*v));
+      for(let i=0;i<H;i++){for(let j=0;j<H;j++) gW2[i][j]+=d2[i]*h1[j]; gb2[i]+=d2[i];}
+      const d1=h1.map((v,j)=>{let s=0; for(let i=0;i<H;i++) s+=d2[i]*W2[i][j]; return s*(1-v*v);});
+      for(let j=0;j<H;j++){gW1[j][0]+=d1[j]*inp[0]; gW1[j][1]+=d1[j]*inp[1]; gb1[j]+=d1[j];}
+    }
+    const s=lr/n;
+    for(let i=0;i<H;i++){
+      W1[i][0]-=s*gW1[i][0]; W1[i][1]-=s*gW1[i][1]; b1[i]-=s*gb1[i];
+      for(let j=0;j<H;j++) W2[i][j]-=s*gW2[i][j];
+      b2[i]-=s*gb2[i]; W3[i]-=s*gW3[i];
+    }
+    b3-=s*gb3; ep++;
+    losses.push(L/n); if(losses.length>260) losses.shift();
+    return L/n;
+  }
+  function drawNet(){
+    const cols=[2,H,H,1], colX=cols.map((_,i)=>nx+10+i*(nw-20)/(cols.length-1));
+    const yFor=(c,i)=>by+netH*(i+.5)/cols[c];
+    const wmax=Math.max(...W1.flat().map(Math.abs),...W2.flat().map(Math.abs),...W3.map(Math.abs),.3);
+    function edge(x1,y1,x2,y2,w){
+      g.strokeStyle = w>0?hex2rgba(C.p1,Math.min(.75,Math.abs(w)/wmax*.75))
+                         :hex2rgba(C.p2,Math.min(.75,Math.abs(w)/wmax*.75));
+      g.lineWidth=Math.max(.4,Math.abs(w)/wmax*2.4);
+      g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
+    }
+    for(let i=0;i<H;i++)for(let j=0;j<2;j++) edge(colX[0],yFor(0,j),colX[1],yFor(1,i),W1[i][j]);
+    for(let i=0;i<H;i++)for(let j=0;j<H;j++) edge(colX[1],yFor(1,j),colX[2],yFor(2,i),W2[i][j]);
+    for(let i=0;i<H;i++) edge(colX[2],yFor(2,i),colX[3],yFor(3,0),W3[i]);
+    cols.forEach((n,c)=>{for(let i=0;i<n;i++)
+      dot(g,colX[c],yFor(c,i),c===0||c===3?6:4.6,"#fff",C.ink);});
+    ["in","h1","h2","out"].forEach((t,i)=>label(g,t,colX[i],by+netH+14,C.dim,10,"center"));
+  }
+  function drawLoss(){
+    if(lw<70) return;
+    label(g,losses.length?"TRAINING LOSS  "+losses[losses.length-1].toFixed(4):"TRAINING LOSS",lx,ly-7,C.dim,10);
+    g.strokeStyle=C.rule; g.strokeRect(lx+.5,ly+.5,lw,lh);
+    if(losses.length<2) return;
+    const mx=Math.max(...losses), mn=Math.min(...losses);
+    g.strokeStyle=C.p3; g.lineWidth=1.8; g.beginPath();
+    losses.forEach((v,i)=>{
+      const X=lx+i/(losses.length-1)*lw;
+      const Y=ly+lh-(mx-mn<1e-9?.5:(v-mn)/(mx-mn))*(lh-10)-5;
+      i?g.lineTo(X,Y):g.moveTo(X,Y);});
+    g.stroke();
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const s=6;
+    for(let i=0;i<bw;i+=s)for(let j=0;j<bw;j+=s){
+      const p=fwd(i/bw,1-j/bw).out;
+      g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.7):hex2rgba(C.p1,(.5-p)*.7);
+      g.fillRect(bx+i,by+j,s,s);
+    }
+    g.strokeStyle=C.rule; g.strokeRect(bx+.5,by+.5,bw,bw);
+    let ok=0;
+    pts.forEach(p=>{if((fwd(p.x,p.y).out>.5?1:0)===p.l)ok++;
+      dot(g,px(p.x),py(p.y),3.6,CLS[p.l],"#fff");});
+    drawNet(); drawLoss();
+    document.getElementById("mlp-out").textContent =
+      `epoch ${ep} · ความแม่น ${(100*ok/pts.length).toFixed(1)}% · hidden ${H}×2`;
+  }
+  document.querySelector('[data-act="mlp-run"]').onclick=()=>{
+    running=!running;
+    if(running) loop("mlp",()=>{for(let i=0;i<6;i++) trainEpoch(); draw();});
+    else stop("mlp");
+  };
+  document.querySelector('[data-act="mlp-reset"]').onclick=()=>{
+    running=false; stop("mlp"); initNet(); draw();};
+  document.getElementById("mlp-h").oninput=e=>{H=+e.target.value;
+    document.getElementById("mlp-hv").textContent=H; initNet(); draw();};
+  document.getElementById("mlp-lr").oninput=e=>{lr=e.target.value/100;
+    document.getElementById("mlp-lrv").textContent=lr.toFixed(2);};
+  gen(); draw();
+};
+
+/* ============ 09 CNN ============ */
+D.cnn=function(){
+  const S=stage("cv-cnn"), g=S.g;
+  const N=16, M=N-2;
+  const cell=Math.min((S.h-124)/N,(S.w-100)/(N+2*M));
+  const x0=18, y0=30;
+  const x1=x0+N*cell+28, x2=x1+M*cell+24;
+  const KER={
+    sobelx:[[1,0,-1],[2,0,-2],[1,0,-1]], sobely:[[1,2,1],[0,0,0],[-1,-2,-1]],
+    blur:[[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]],
+    sharp:[[0,-1,0],[-1,5,-1],[0,-1,0]], emboss:[[-2,-1,0],[-1,1,1],[0,1,2]]
+  };
+  let img=[], kname="sobelx", anim=null, drawing=0;
+  function clearImg(){img=Array.from({length:N},()=>new Array(N).fill(0));}
+  function preset(){
+    clearImg();
+    const put=(r,c,v)=>{if(r>=0&&r<N&&c>=0&&c<N)img[r][c]=v;};
+    for(let c=3;c<=12;c++) put(3,c,1);
+    for(let i=0;i<9;i++) put(4+i,12-Math.floor(i*0.75),1);
+    for(let i=0;i<9;i++) put(4+i,11-Math.floor(i*0.75),.8);
+    for(let c=5;c<=9;c++) put(8,c,.9);
+  }
+  function conv(){
+    const K=KER[kname], out=[];
+    for(let i=0;i<M;i++){out.push([]);
+      for(let j=0;j<M;j++){let s=0;
+        for(let a=0;a<3;a++)for(let b=0;b<3;b++) s+=img[i+a][j+b]*K[a][b];
+        out[i].push(s);}}
+    return out;
+  }
+  function relu(F){return F.map(r=>r.map(v=>Math.max(0,v)));}
+  function pool(F){
+    const P=[], n=Math.floor(F.length/2);
+    for(let i=0;i<n;i++){P.push([]);
+      for(let j=0;j<n;j++) P[i].push(Math.max(F[2*i][2*j],F[2*i][2*j+1],F[2*i+1][2*j],F[2*i+1][2*j+1]));}
+    return P;
+  }
+  function drawGrid(F,ox,oy,cs,mode,ttl){
+    let mx=0; F.forEach(r=>r.forEach(v=>{mx=Math.max(mx,Math.abs(v));})); mx=mx||1;
+    for(let i=0;i<F.length;i++)for(let j=0;j<F[i].length;j++){
+      const v=F[i][j];
+      if(mode==="img"){const t=Math.round(255-v*230); g.fillStyle=`rgb(${t},${t+4},${t+8})`;}
+      else if(mode==="signed") g.fillStyle = v>=0?hex2rgba(C.p1,Math.min(1,v/mx)):hex2rgba(C.p2,Math.min(1,-v/mx));
+      else g.fillStyle=hex2rgba(C.p4,Math.min(1,v/mx));
+      g.fillRect(ox+j*cs,oy+i*cs,cs-0.6,cs-0.6);
+    }
+    g.strokeStyle=C.rule; g.strokeRect(ox+.5,oy+.5,F[0].length*cs,F.length*cs);
+    label(g,ttl,ox,oy-8,C.dim,10);
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    drawGrid(img,x0,y0,cell,"img",`INPUT ${N}×${N}`);
+    const F=conv();
+    drawGrid(F,x1,y0,cell,"signed",`FEATURE MAP ${M}×${M}`);
+    const P=pool(relu(F));
+    drawGrid(P,x2,y0,cell*2,"pos",`ReLU + MAXPOOL ${P.length}×${P.length}`);
+    const K=KER[kname];
+    const ks=Math.min(26,cell*1.6), ky=y0+N*cell+16;
+    label(g,"KERNEL 3×3",x0,ky+10,C.dim,10);
+    for(let a=0;a<3;a++)for(let b=0;b<3;b++){
+      const X=x0+86+b*ks, Y=ky-6+a*ks;
+      g.fillStyle="#fff"; g.strokeStyle=C.rule; g.fillRect(X,Y,ks-1,ks-1); g.strokeRect(X+.5,Y+.5,ks-1,ks-1);
+      label(g,(Math.round(K[a][b]*100)/100).toString(),X+ks/2-.5,Y+ks/2+4,C.ink,9.5,"center");
+    }
+    if(anim){
+      const i=Math.floor(anim/M), j=anim%M;
+      g.strokeStyle=C.p3; g.lineWidth=2.4;
+      g.strokeRect(x0+j*cell,y0+i*cell,cell*3,cell*3);
+      g.fillStyle=hex2rgba(C.p3,.16); g.fillRect(x0+j*cell,y0+i*cell,cell*3,cell*3);
+      g.strokeRect(x1+j*cell,y0+i*cell,cell,cell);
+    }
+    document.getElementById("cnn-out").textContent =
+      `${N}×${N} → conv3×3 → ${M}×${M} → pool2×2 → ${P.length}×${P.length}`;
+  }
+  function paint(e,erase){
+    const p=pointerPos(S.c,e);
+    const j=Math.floor((p.x-x0)/cell), i=Math.floor((p.y-y0)/cell);
+    if(i>=0&&i<N&&j>=0&&j<N){img[i][j]=erase?0:1; draw();}
+  }
+  S.c.oncontextmenu=e=>e.preventDefault();
+  S.c.onmousedown=e=>{drawing=(e.button===2||e.shiftKey)?2:1; paint(e,drawing===2);};
+  S.c.onmousemove=e=>{if(drawing) paint(e,drawing===2);};
+  if(!window.__cnnUp){window.__cnnUp=true; window.addEventListener("mouseup",()=>{window.__cnnDrawStop&&window.__cnnDrawStop();});}
+  window.__cnnDrawStop=()=>{drawing=0;};
+  S.c.ontouchstart=e=>{e.preventDefault(); drawing=1; paint(e,false);};
+  S.c.ontouchmove=e=>{e.preventDefault(); paint(e,false);};
+  S.c.ontouchend=()=>{drawing=0;};
+  document.getElementById("cnn-k").onchange=e=>{kname=e.target.value; draw();};
+  document.querySelector('[data-act="cnn-clear"]').onclick=()=>{clearImg();draw();};
+  document.querySelector('[data-act="cnn-preset"]').onclick=()=>{preset();draw();};
+  document.querySelector('[data-act="cnn-anim"]').onclick=()=>{
+    if(RAF.cnn){stop("cnn"); anim=null; draw(); return;}
+    anim=0; let t=0;
+    loop("cnn",()=>{if(++t%2===0){anim++; if(anim>=M*M){anim=null; stop("cnn");} draw();}});
+  };
+  preset(); draw();
+};
+
+/* ============ 10 LSTM ============ */
+D.lstm=function(){
+  const S=stage("cv-lstm"), g=S.g;
+  const T=40, R=rng(29);
+  const seq=Array.from({length:T},(_,t)=>Math.sin(t/4.5)*.7+Math.sin(t/11)*.3);
+  const Wf=[.9,-1.4,.3], Wi=[1.5,.6,-.2], Wo=[1.1,.9,.1], Wg=[1.8,-.7,0];
+  const sig=z=>1/(1+Math.exp(-z));
+  let t=0, c=0, h=0, hist=[], running=false, tk=0;
+  function reset(){t=0;c=0;h=0;hist=[];}
+  function stepOne(){
+    const x=seq[t%T];
+    const f=sig(Wf[0]*x+Wf[1]*h+Wf[2]);
+    const i=sig(Wi[0]*x+Wi[1]*h+Wi[2]);
+    const o=sig(Wo[0]*x+Wo[1]*h+Wo[2]);
+    const gg=Math.tanh(Wg[0]*x+Wg[1]*h+Wg[2]);
+    c=f*c+i*gg; h=o*Math.tanh(c);
+    hist.push({x,f,i,o,g:gg,c,h}); if(hist.length>T) hist.shift();
+    t++;
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const pad=20, topH=Math.min(96,S.h*.3), w=S.w-pad*2;
+    // sequence strip
+    label(g,"INPUT SEQUENCE  x₁ … x₄₀",pad,16,C.dim,10);
+    g.strokeStyle=C.rule; g.strokeRect(pad+.5,22.5,w,topH);
+    const bw=w/T;
+    for(let k=0;k<T;k++){
+      const v=seq[k], hgt=Math.abs(v)*(topH/2-6);
+      g.fillStyle = k===(t-1+T)%T ? C.p3 : hex2rgba(C.p1,.5);
+      g.fillRect(pad+k*bw+1, 22+topH/2-(v>0?hgt:0), bw-2, hgt);
+    }
+    g.strokeStyle=hex2rgba(C.dim,.5); g.beginPath();
+    g.moveTo(pad,22+topH/2); g.lineTo(pad+w,22+topH/2); g.stroke();
+    // gates
+    const gy=topH+52, gh=S.h-gy-26, gwid=w*.34;
+    label(g,"GATE VALUES ณ step ปัจจุบัน",pad,gy-10,C.dim,10);
+    g.strokeStyle=C.rule; g.strokeRect(pad+.5,gy+.5,gwid,gh);
+    const cur=hist[hist.length-1]||{f:0,i:0,o:0,g:0,c:0,h:0};
+    const gates=[["forget  f",cur.f,C.p2],["input   i",cur.i,C.p1],["candid  g",(cur.g+1)/2,C.p6],["output  o",cur.o,C.p4]];
+    gates.forEach((gt,k)=>{
+      const y=gy+18+k*(gh-24)/4, bh=Math.min(16,(gh-30)/5);
+      label(g,gt[0],pad+8,y+bh-3,C.ink,10);
+      const bx=pad+82, bwid=gwid-96;
+      g.fillStyle=C.hair; g.fillRect(bx,y,bwid,bh);
+      g.fillStyle=gt[2]; g.fillRect(bx,y,bwid*gt[1],bh);
+      label(g,gt[1].toFixed(2),bx+bwid+4,y+bh-3,C.dim,9.5);
+    });
+    // memory chart
+    const mx=pad+gwid+22, mw=S.w-pad-mx;
+    label(g,"CELL STATE c (ม่วง) และ OUTPUT h (เขียว)",mx,gy-10,C.dim,10);
+    g.strokeStyle=C.rule; g.strokeRect(mx+.5,gy+.5,mw,gh);
+    if(hist.length>1){
+      const all=hist.flatMap(d=>[d.c,d.h]);
+      const lo=Math.min(-1,...all), hi=Math.max(1,...all);
+      const Y=v=>gy+gh-((v-lo)/(hi-lo))*(gh-10)-5;
+      g.strokeStyle=hex2rgba(C.dim,.4); g.beginPath();
+      g.moveTo(mx,Y(0)); g.lineTo(mx+mw,Y(0)); g.stroke();
+      [["c",C.p5],["h",C.p4]].forEach(([key,col])=>{
+        g.strokeStyle=col; g.lineWidth=2; g.beginPath();
+        hist.forEach((d,k)=>{const X=mx+k/(T-1)*mw;
+          k?g.lineTo(X,Y(d[key])):g.moveTo(X,Y(d[key]));});
+        g.stroke();
+      });
+    }
+    document.getElementById("lstm-out").textContent =
+      `t = ${t} · c = ${cur.c.toFixed(3)} · h = ${cur.h.toFixed(3)}`;
+  }
+  document.querySelector('[data-act="lstm-run"]').onclick=()=>{
+    running=!running;
+    if(running){tk=0; loop("lstm",()=>{if(++tk%12===0){stepOne();draw();}});}
+    else stop("lstm");
+  };
+  document.querySelector('[data-act="lstm-step"]').onclick=()=>{
+    running=false; stop("lstm"); stepOne(); draw();};
+  document.querySelector('[data-act="lstm-reset"]').onclick=()=>{
+    running=false; stop("lstm"); reset(); draw();};
+  reset(); for(let i=0;i<4;i++) stepOne(); draw();
+};
+
+/* ============ 11 TRANSFORMER ATTENTION ============ */
+D.attn=function(){
+  const S=stage("cv-attn"), g=S.g;
+  const SENT=[
+    ["the","cat","sat","on","the","mat","because","it","was","warm"],
+    ["a","model","learns","patterns","from","data","over","time"]
+  ];
+  let si=0, head=0, hover=-1, A=[], toks=[];
+  function compute(){
+    toks=SENT[si];
+    const n=toks.length, d=8, R=rng(101+si*37+head*11);
+    const E=toks.map((w,i)=>{
+      let s=0; for(const ch of w) s+=ch.charCodeAt(0);
+      const r=rng(s*7+head*13+1);
+      return Array.from({length:d},()=>r()*2-1 + .3*Math.sin(i/2+head));
+    });
+    const Wq=Array.from({length:d},()=>Array.from({length:d},()=>gauss(R)*.6));
+    const Wk=Array.from({length:d},()=>Array.from({length:d},()=>gauss(R)*.6));
+    const proj=(v,W)=>W.map(row=>row.reduce((s,x,j)=>s+x*v[j],0));
+    const Q=E.map(v=>proj(v,Wq)), K=E.map(v=>proj(v,Wk));
+    A=Q.map(q=>{
+      const sc=K.map(k=>q.reduce((s,x,j)=>s+x*k[j],0)/Math.sqrt(d));
+      const mx=Math.max(...sc), ex=sc.map(v=>Math.exp(v-mx)), sum=ex.reduce((a,b)=>a+b,0);
+      return ex.map(v=>v/sum);
+    });
+  }
+  let geo={};
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const n=toks.length;
+    const top=54, pad=Math.min(88,Math.max(46,S.w*0.16));
+    const cs=Math.max(9,Math.min((S.h-top-58)/n,(S.w-pad-34)*0.56/n));
+    const gx=pad, gy=top;
+    geo={gx,gy,cs,n};
+    label(g,"ATTENTION MATRIX  (แถว = คำที่มอง, คอลัมน์ = คำที่ถูกมอง)",gx-62,20,C.dim,10);
+    for(let i=0;i<n;i++){
+      label(g,toks[i],gx-8,gy+i*cs+cs/2+4,hover===i?C.p3:C.ink,11,"end");
+      g.save(); g.translate(gx+i*cs+cs/2,gy-8); g.rotate(-Math.PI/4);
+      label(g,toks[i],0,0,C.dim,10); g.restore();
+      for(let j=0;j<n;j++){
+        const v=A[i][j];
+        g.fillStyle=hex2rgba(C.p5,Math.pow(v,.7));
+        g.fillRect(gx+j*cs,gy+i*cs,cs-1,cs-1);
+        if(cs>26) label(g,v.toFixed(2),gx+j*cs+cs/2,gy+i*cs+cs/2+3.5,v>.35?"#fff":hex2rgba(C.ink,.55),8.5,"center");
+      }
+      if(hover===i){g.strokeStyle=C.p3; g.lineWidth=2;
+        g.strokeRect(gx-.5,gy+i*cs-.5,n*cs,cs);}
+    }
+    // token flow diagram on the right
+    const fx=gx+n*cs+26, fw=Math.max(70,S.w-(gx+n*cs+26)-14);
+    label(g,"เส้นความสนใจของคำที่เลือก",fx,20,C.dim,10);
+    const ty=gy+20, spacing=Math.min(30,(S.h-ty-40)/n);
+    for(let i=0;i<n;i++){
+      const y=ty+i*spacing;
+      g.fillStyle = hover===i?C.p3:"#fff"; g.strokeStyle=C.ink; g.lineWidth=1;
+      g.fillRect(fx,y,fw*.42,spacing-5); g.strokeRect(fx+.5,y+.5,fw*.42,spacing-5);
+      label(g,toks[i],fx+6,y+spacing-9,hover===i?"#fff":C.ink,10.5);
+    }
+    if(hover>=0){
+      for(let j=0;j<n;j++){
+        const v=A[hover][j];
+        if(v<0.04) continue;
+        const y1=ty+hover*spacing+(spacing-5)/2, y2=ty+j*spacing+(spacing-5)/2;
+        g.strokeStyle=hex2rgba(C.p5,Math.min(.9,v*2.2));
+        g.lineWidth=Math.max(.6,v*11);
+        g.beginPath(); g.moveTo(fx+fw*.42,y1);
+        g.bezierCurveTo(fx+fw*.72,y1,fx+fw*.72,y2,fx+fw*.95,y2); g.stroke();
+        dot(g,fx+fw*.95,y2,3,C.p5);
+      }
+      const row=A[hover], top3=row.map((v,j)=>({v,j})).sort((a,b)=>b.v-a.v).slice(0,3);
+      document.getElementById("attn-out").textContent =
+        `"${toks[hover]}" สนใจ: ` + top3.map(o=>`${toks[o.j]} ${(o.v*100).toFixed(0)}%`).join(" · ");
+    } else document.getElementById("attn-out").textContent="เลื่อนเมาส์บนตารางเพื่อเลือกแถว";
+  }
+  S.c.onmousemove=e=>{
+    const p=pointerPos(S.c,e);
+    const i=Math.floor((p.y-geo.gy)/geo.cs);
+    const nh=(p.x>geo.gx-70&&p.x<geo.gx+geo.n*geo.cs&&i>=0&&i<geo.n)?i:-1;
+    if(nh!==hover){hover=nh; draw();}
+  };
+  S.c.onmouseleave=()=>{hover=-1;draw();};
+  document.getElementById("attn-s").onchange=e=>{si=+e.target.value; hover=-1; compute(); draw();};
+  document.getElementById("attn-h").onchange=e=>{head=+e.target.value; compute(); draw();};
+  compute(); draw();
+};
+
+/* ============ 12 REINFORCEMENT LEARNING ============ */
+D.rl=function(){
+  const S=stage("cv-rl"), g=S.g;
+  const W=10,H=7;
+  const cell=Math.min((S.h-38)/H,(S.w-230)/W);
+  const ox=18, oy=22;
+  const WALLS=new Set(["3,1","3,2","3,3","6,3","6,4","6,5","3,5"]);
+  const GOAL=[9,0], TRAP=[[9,3],[5,1],[7,6]];
+  const A=[[0,-1],[1,0],[0,1],[-1,0]];
+  let Q, agent, eps=.25, speed=12, running=false, epi=0, tot=0, lastR=[], steps=0, tk=0;
+  function key(x,y){return x+","+y;}
+  function isWall(x,y){return WALLS.has(key(x,y));}
+  function reset(){
+    Q={}; for(let x=0;x<W;x++)for(let y=0;y<H;y++) Q[key(x,y)]=[0,0,0,0];
+    epi=0; tot=0; lastR=[]; newEp();
+  }
+  function newEp(){agent={x:0,y:H-1}; steps=0; tot=0;}
+  function stepEnv(){
+    const s=key(agent.x,agent.y);
+    const a = Math.random()<eps ? Math.floor(Math.random()*4)
+            : Q[s].indexOf(Math.max(...Q[s]));
+    let nx=agent.x+A[a][0], ny=agent.y+A[a][1];
+    if(nx<0||nx>=W||ny<0||ny>=H||isWall(nx,ny)){nx=agent.x;ny=agent.y;}
+    let r=-0.02, done=false;
+    if(nx===GOAL[0]&&ny===GOAL[1]){r=1; done=true;}
+    else if(TRAP.some(t=>t[0]===nx&&t[1]===ny)){r=-1; done=true;}
+    const s2=key(nx,ny);
+    Q[s][a] += 0.2*(r + 0.95*Math.max(...Q[s2]) - Q[s][a]);
+    agent={x:nx,y:ny}; tot+=r; steps++;
+    if(done||steps>240){
+      epi++; lastR.push(tot); if(lastR.length>40) lastR.shift(); newEp();
+    }
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    let vmax=.01; for(const k in Q) vmax=Math.max(vmax,Math.max(...Q[k]));
+    let vmin=-.01; for(const k in Q) vmin=Math.min(vmin,Math.min(...Q[k]));
+    for(let x=0;x<W;x++)for(let y=0;y<H;y++){
+      const X=ox+x*cell, Y=oy+y*cell;
+      if(isWall(x,y)){g.fillStyle="#B9C6D0"; g.fillRect(X,Y,cell,cell);}
+      else if(x===GOAL[0]&&y===GOAL[1]){g.fillStyle=hex2rgba(C.p4,.85); g.fillRect(X,Y,cell,cell);
+        label(g,"+1",X+cell/2,Y+cell/2+4,"#fff",11,"center");}
+      else if(TRAP.some(t=>t[0]===x&&t[1]===y)){g.fillStyle=hex2rgba(C.p2,.85); g.fillRect(X,Y,cell,cell);
+        label(g,"−1",X+cell/2,Y+cell/2+4,"#fff",11,"center");}
+      else{
+        const v=Math.max(...Q[key(x,y)]);
+        g.fillStyle = v>=0?hex2rgba(C.p4,Math.min(.75,v/vmax*.75)):hex2rgba(C.p2,Math.min(.6,v/vmin*.6));
+        g.fillRect(X,Y,cell,cell);
+        const a=Q[key(x,y)].indexOf(Math.max(...Q[key(x,y)]));
+        if(Math.abs(v)>0.005){
+          const cx=X+cell/2, cy=Y+cell/2, L=cell*.26;
+          g.strokeStyle=hex2rgba(C.ink,.65); g.lineWidth=1.6; g.beginPath();
+          g.moveTo(cx-A[a][0]*L,cy-A[a][1]*L); g.lineTo(cx+A[a][0]*L,cy+A[a][1]*L); g.stroke();
+          g.beginPath();
+          g.moveTo(cx+A[a][0]*L,cy+A[a][1]*L);
+          g.lineTo(cx+A[a][0]*L-A[a][0]*4-A[a][1]*4, cy+A[a][1]*L-A[a][1]*4+A[a][0]*4);
+          g.lineTo(cx+A[a][0]*L-A[a][0]*4+A[a][1]*4, cy+A[a][1]*L-A[a][1]*4-A[a][0]*4);
+          g.closePath(); g.fillStyle=hex2rgba(C.ink,.65); g.fill();
+        }
+      }
+      g.strokeStyle=C.rule; g.strokeRect(X+.5,Y+.5,cell,cell);
+    }
+    dot(g,ox+agent.x*cell+cell/2,oy+agent.y*cell+cell/2,cell*.24,C.p3,"#fff");
+    // reward chart
+    const cx0=ox+W*cell+26, cw=Math.max(80,S.w-cx0-18), ch=Math.min(150,(H*cell)*0.52);
+    label(g,"รางวัลรวมต่อ episode (40 ล่าสุด)",cx0,oy+10,C.dim,10);
+    g.strokeStyle=C.rule; g.strokeRect(cx0+.5,oy+18.5,cw,ch);
+    if(lastR.length>1){
+      const Y=v=>oy+18+ch-((v+1.4)/2.6)*ch;
+      g.strokeStyle=hex2rgba(C.dim,.4); g.beginPath();
+      g.moveTo(cx0,Y(0)); g.lineTo(cx0+cw,Y(0)); g.stroke();
+      g.strokeStyle=C.p1; g.lineWidth=1.8; g.beginPath();
+      lastR.forEach((v,i)=>{const X=cx0+i/(lastR.length-1)*cw;
+        i?g.lineTo(X,Y(v)):g.moveTo(X,Y(v));});
+      g.stroke();
+    }
+    label(g,"START",ox+2,oy+H*cell+14,C.dim,9.5);
+    if(cw>150){
+      let ly=oy+ch+52;
+      label(g,"อ่านภาพนี้ยังไง",cx0,ly-14,C.ink,10.5);
+      [["สีเขียวเข้ม","ช่องที่เอเจนต์ประเมินว่ามีค่ามาก"],
+       ["สีชมพู","ช่องที่เคยพาไปเจอกับดัก"],
+       ["ลูกศร","การกระทำที่ดีที่สุดของช่องนั้น"],
+       ["จุดส้ม","ตำแหน่งเอเจนต์ตอนนี้"]].forEach((r,i)=>{
+        label(g,r[0],cx0,ly+i*17,C.p1,10);
+        label(g,r[1],cx0+62,ly+i*17,C.dim,10);});
+      label(g,"α = 0.20   γ = 0.95   ε = "+eps.toFixed(2),cx0,ly+4*17+8,C.ink,10);
+    }
+    document.getElementById("rl-out").textContent =
+      `episode ${epi} · step ${steps} · รางวัลสะสม ${tot.toFixed(2)}`;
+  }
+  document.querySelector('[data-act="rl-run"]').onclick=()=>{
+    running=!running;
+    if(running) loop("rl",()=>{for(let i=0;i<speed;i++) stepEnv(); draw();});
+    else stop("rl");
+  };
+  document.querySelector('[data-act="rl-reset"]').onclick=()=>{
+    running=false; stop("rl"); reset(); draw();};
+  document.getElementById("rl-e").oninput=e=>{eps=e.target.value/100;
+    document.getElementById("rl-ev").textContent=eps.toFixed(2);};
+  document.getElementById("rl-sp").oninput=e=>{speed=+e.target.value;
+    document.getElementById("rl-spv").textContent=speed;};
+  reset(); draw();
+};
+
+/* ============ 13 XGBOOST ============ */
+D.xgb=function(){
+  const S=stage("cv-xgb"), g=S.g;
+  const pad=46;
+  let R=rng(13), data=[], rounds=10, lr=.2, dep=2, models=[], base=0;
+  const gw=()=>S.w-pad-20;
+  function gen(){
+    R=rng(Math.floor(Math.random()*1e6)+1);
+    data=[];
+    for(let i=0;i<70;i++){
+      const x=i/69;
+      const y=Math.sin(x*6.5)*.55 + (x>.6?.45:0) + .11*gauss(R);
+      data.push({x,y});
+    }
+    fit();
+  }
+  function stumpFit(res,depth){
+    // res: array of {x, r}
+    function rec(pts,d){
+      const mean=pts.reduce((s,p)=>s+p.r,0)/Math.max(1,pts.length);
+      if(d>=depth||pts.length<4) return {leaf:true,v:mean};
+      let best=null;
+      for(let i=1;i<pts.length-1;i+=2){
+        const th=(pts[i].x+pts[i+1].x)/2;
+        const L=pts.filter(p=>p.x<th), Rt=pts.filter(p=>p.x>=th);
+        if(L.length<2||Rt.length<2) continue;
+        const m1=L.reduce((s,p)=>s+p.r,0)/L.length, m2=Rt.reduce((s,p)=>s+p.r,0)/Rt.length;
+        const sse=L.reduce((s,p)=>s+(p.r-m1)**2,0)+Rt.reduce((s,p)=>s+(p.r-m2)**2,0);
+        if(!best||sse<best.sse) best={sse,th,L,R:Rt};
+      }
+      if(!best) return {leaf:true,v:mean};
+      return {leaf:false,th:best.th,l:rec(best.L,d+1),r:rec(best.R,d+1)};
+    }
+    return rec(res.slice().sort((a,b)=>a.x-b.x),0);
+  }
+  function evalStump(t,x){while(!t.leaf) t = x<t.th?t.l:t.r; return t.v;}
+  function fit(){
+    base=data.reduce((s,p)=>s+p.y,0)/data.length;
+    models=[];
+    const pred=data.map(()=>base);
+    for(let m=0;m<80;m++){
+      const res=data.map((p,i)=>({x:p.x,r:p.y-pred[i]}));
+      const t=stumpFit(res,dep);
+      models.push(t);
+      data.forEach((p,i)=>{pred[i]+=lr*evalStump(t,p.x);});
+    }
+  }
+  function predict(x,n){
+    let v=base;
+    for(let m=0;m<n;m++) v+=lr*evalStump(models[m],x);
+    return v;
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const topH=S.h*.60-18, botY=S.h*.60+16, botH=S.h-botY-24;
+    const w=gw();
+    const X=x=>pad+x*w;
+    const lo=-1.35, hi=1.35;
+    const Y=v=>18+(hi-v)/(hi-lo)*topH;
+    grid(g,pad,18,w,topH,10);
+    label(g,"ค่าจริง (จุด) vs ค่าทำนายรวม (เส้น)",pad,12,C.dim,10);
+    // prediction curve
+    g.strokeStyle=C.p1; g.lineWidth=2.4; g.beginPath();
+    for(let i=0;i<=260;i++){const x=i/260, v=predict(x,rounds);
+      i?g.lineTo(X(x),Y(v)):g.moveTo(X(x),Y(v));}
+    g.stroke();
+    data.forEach(p=>dot(g,X(p.x),Y(p.y),3,hex2rgba(C.ink,.55)));
+    // residual panel
+    const rY=v=>botY+botH/2-v*(botH/2-4)/0.8;
+    g.strokeStyle=C.rule; g.strokeRect(pad+.5,botY+.5,w,botH);
+    g.strokeStyle=hex2rgba(C.dim,.5); g.beginPath();
+    g.moveTo(pad,rY(0)); g.lineTo(pad+w,rY(0)); g.stroke();
+    label(g,"residual ที่เหลือ (y − F"+rounds+")",pad,botY-8,C.dim,10);
+    let mse=0;
+    data.forEach(p=>{
+      const r=p.y-predict(p.x,rounds); mse+=r*r;
+      g.strokeStyle = r>0?C.p3:C.p2; g.lineWidth=2;
+      g.beginPath(); g.moveTo(X(p.x),rY(0)); g.lineTo(X(p.x),rY(Math.max(-.79,Math.min(.79,r)))); g.stroke();
+    });
+    mse/=data.length;
+    document.getElementById("xgb-out").textContent =
+      `รอบ ${rounds} · η = ${lr.toFixed(2)} · MSE = ${mse.toFixed(4)}`;
+  }
+  document.getElementById("xgb-n").oninput=e=>{rounds=+e.target.value;
+    document.getElementById("xgb-nv").textContent=rounds; draw();};
+  document.getElementById("xgb-lr").oninput=e=>{lr=e.target.value/100;
+    document.getElementById("xgb-lrv").textContent=lr.toFixed(2); fit(); draw();};
+  document.getElementById("xgb-d").oninput=e=>{dep=+e.target.value;
+    document.getElementById("xgb-dv").textContent=dep; fit(); draw();};
+  document.querySelector('[data-act="xgb-new"]').onclick=()=>{gen();draw();};
+  gen(); draw();
+};
+
+/* ============ 14 STACKING ============ */
+D.stack=function(){
+  const S=stage("cv-stack"), g=S.g;
+  let R=rng(41), pts=[], kind="moons";
+  let tree=null, lr=null, base=[], meta=null;
+  const smallW=()=>Math.min((S.h-70)/2, (S.w*.42-30)/2);
+  function gen(){
+    R=rng(Math.floor(Math.random()*1e6)+1);
+    pts = kind==="moons"?makeMoons(34,.035,R) : kind==="xor"?makeXor(150,R) : makeCircles(45,R);
+    fit();
+  }
+  function knnP(x,y,k){
+    const nb=pts.map(p=>({l:p.l,d:(p.x-x)**2+(p.y-y)**2})).sort((a,b)=>a.d-b.d).slice(0,k);
+    return nb.reduce((s,n)=>s+n.l,0)/k;
+  }
+  function fit(){
+    tree=buildTree(pts,0,4,2,false,R);
+    lr=trainLogreg(pts,1200,1.5);
+    base=[
+      {name:"kNN k=7", f:(x,y)=>knnP(x,y,7), col:C.p1},
+      {name:"Tree d=4", f:(x,y)=>treeProbs(tree,x,y)[1], col:C.p6},
+      {name:"LogReg", f:(x,y)=>1/(1+Math.exp(-(lr.w1*x+lr.w2*y+lr.b))), col:C.p4}
+    ];
+    // meta features (in-sample here for demo speed)
+    const mf=pts.map(p=>({x:base[0].f(p.x,p.y),y:base[1].f(p.x,p.y),z:base[2].f(p.x,p.y),l:p.l}));
+    let w=[0,0,0], b=0;
+    for(let e=0;e<2500;e++){
+      let g1=0,g2=0,g3=0,gb=0;
+      for(const m of mf){
+        const s=1/(1+Math.exp(-(w[0]*m.x+w[1]*m.y+w[2]*m.z+b))), d=s-m.l;
+        g1+=d*m.x; g2+=d*m.y; g3+=d*m.z; gb+=d;
+      }
+      const n=mf.length, a=1.2;
+      w[0]-=a*g1/n; w[1]-=a*g2/n; w[2]-=a*g3/n; b-=a*gb/n;
+    }
+    meta={w,b};
+  }
+  function metaP(x,y){
+    const a=base[0].f(x,y), c=base[1].f(x,y), d=base[2].f(x,y);
+    return 1/(1+Math.exp(-(meta.w[0]*a+meta.w[1]*c+meta.w[2]*d+meta.b)));
+  }
+  function panel(fn,X0,Y0,size,title,acc){
+    const s=Math.max(4,Math.round(size/40));
+    for(let i=0;i<size;i+=s)for(let j=0;j<size;j+=s){
+      const p=fn(i/size,1-j/size);
+      g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.75):hex2rgba(C.p1,(.5-p)*.75);
+      g.fillRect(X0+i,Y0+j,s,s);
+    }
+    g.strokeStyle=C.rule; g.strokeRect(X0+.5,Y0+.5,size,size);
+    pts.forEach(p=>dot(g,X0+p.x*size,Y0+(1-p.y)*size,size>200?3.4:2.4,CLS[p.l],"#fff"));
+    label(g,title,X0,Y0-6,C.ink,10.5);
+    g.fillStyle="rgba(255,255,255,.88)"; g.fillRect(X0+4,Y0+size-19,44,15);
+    label(g,acc,X0+8,Y0+size-8,C.p1,10.5);
+  }
+  function accOf(fn){
+    let ok=0; pts.forEach(p=>{if((fn(p.x,p.y)>.5?1:0)===p.l)ok++;});
+    return (100*ok/pts.length).toFixed(1)+"%";
+  }
+  function draw(){
+    g.clearRect(0,0,S.w,S.h);
+    const top=30, rowGap=22;
+    const sSize=Math.min((S.h-top-16-rowGap*2)/3, S.w*0.26);
+    const bigMax=S.h-top-16;
+    const big=Math.min(bigMax, S.w-(20+sSize)-70);
+    const bx=S.w-big-20;
+    base.forEach((m,i)=>{
+      panel(m.f, 20, top+i*(sSize+rowGap), sSize, m.name, accOf(m.f));
+    });
+    panel(metaP, bx, top+(bigMax-big)/2, big, "STACKED  →  meta-learner", accOf(metaP));
+    g.strokeStyle=hex2rgba(C.dim,.6); g.lineWidth=1.4;
+    const bcy=top+(bigMax-big)/2+big/2;
+    for(let i=0;i<3;i++){
+      const y=top+i*(sSize+rowGap)+sSize/2;
+      g.beginPath(); g.moveTo(20+sSize+6,y);
+      g.bezierCurveTo(bx-34,y,bx-34,bcy,bx-6,bcy); g.stroke();
+    }
+    document.getElementById("stack-out").textContent =
+      `น้ำหนัก meta: kNN ${meta.w[0].toFixed(2)} · tree ${meta.w[1].toFixed(2)} · logreg ${meta.w[2].toFixed(2)}`;
+  }
+  document.querySelector('[data-act="stack-new"]').onclick=()=>{gen();draw();};
+  document.getElementById("stack-data").onchange=e=>{kind=e.target.value; gen(); draw();};
+  gen(); draw();
+};
+
+/* ============ router ============ */
+const inited={};
+function show(n){
+  stopAll();
+  document.querySelectorAll(".plate").forEach(p=>p.classList.toggle("on",p.dataset.plate===String(n)));
+  document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.go===String(n)));
+  const el=document.querySelector(`.plate[data-plate="${n}"]`);
+  const key=el.dataset.demo;
+  if(!inited[key]){
+    requestAnimationFrame(()=>{try{D[key]();inited[key]=true;}catch(err){console.error(key,err);}});
+  }
+}
+document.getElementById("nav").addEventListener("click",e=>{
+  const a=e.target.closest("a[data-go]"); if(!a) return;
+  e.preventDefault(); show(a.dataset.go);
+  if(window.innerWidth<=860) document.getElementById("main").scrollIntoView({block:"start"});
+  location.hash="p"+a.dataset.go;
+});
+let resizeT;
+window.addEventListener("resize",()=>{
+  clearTimeout(resizeT);
+  resizeT=setTimeout(()=>{
+    const cur=document.querySelector(".plate.on");
+    if(!cur) return;
+    stopAll(); inited[cur.dataset.demo]=false;
+    try{D[cur.dataset.demo](); inited[cur.dataset.demo]=true;}catch(e){console.error(e);}
+  },240);
+});
+const start=(location.hash.match(/^#p(\d+)$/)||[])[1]||"1";
+show(start);
+</script>
+</body>
+</html>
