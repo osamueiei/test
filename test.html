@@ -86,6 +86,37 @@ nav a.on .n{color:var(--paper);opacity:.6}
 canvas{display:block;width:100%;height:auto;aspect-ratio:16/9;touch-action:none}
 canvas.tall{aspect-ratio:16/10}
 canvas.sq{aspect-ratio:4/3}
+canvas.wide{aspect-ratio:16/5}
+.tune{margin-top:22px;border-top:2px solid var(--ink);padding-top:14px}
+.tune-head{display:flex;flex-wrap:wrap;gap:9px 14px;align-items:center;margin-bottom:10px}
+.tune-head h3{margin:0;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink);font-weight:600}
+.tune-head h3::before{content:"";display:inline-block;width:7px;height:7px;background:var(--p3);margin-right:8px;vertical-align:1px}
+.rack label input[type=checkbox]{accent-color:var(--p1)}
+.params{margin-top:14px;border:1px solid var(--rule);background:#FBFCFD}
+.phead{display:flex;align-items:center;gap:12px;padding:9px 14px;border-bottom:1px solid var(--rule)}
+.phead h3{margin:0;font-size:11px;letter-spacing:.15em;text-transform:uppercase;color:var(--ink);font-weight:600}
+.phead h3::before{content:"";display:inline-block;width:7px;height:7px;background:var(--p1);margin-right:8px}
+.phead button{margin-left:auto}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr))}
+.prow{padding:10px 14px;border-right:1px solid var(--hair);border-bottom:1px solid var(--hair)}
+.pmeta{display:flex;flex-wrap:wrap;gap:1px 10px;align-items:baseline;margin-bottom:7px}
+.pname{font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;color:var(--ink);background:#E9F0F4;padding:1px 6px}
+.pdesc{font-size:11.5px;color:var(--dim);line-height:1.45}
+.pctl{display:flex;align-items:center;gap:6px;flex-wrap:wrap}
+.pstep{width:27px;height:27px;padding:0;font-size:16px;line-height:1;background:#fff;color:var(--ink);border:1px solid var(--rule)}
+.pstep:hover{background:var(--ink);color:#fff;border-color:var(--ink)}
+.pin{width:80px;height:27px;text-align:center;font-family:"IBM Plex Mono",monospace;font-size:12.5px;font-weight:600;
+     border:1px solid var(--ink);background:#fff;color:var(--ink);border-radius:2px;padding:0 4px}
+.pin:focus{outline:2px solid var(--p3);outline-offset:1px}
+.prange{flex:1 1 100px;min-width:80px;accent-color:var(--p1)}
+.phint{font-family:"IBM Plex Mono",monospace;font-size:10px;color:var(--dim);white-space:nowrap}
+.pseg{display:flex;flex-wrap:wrap}
+.pseg button{background:#fff;color:var(--ink);border:1px solid var(--rule);border-radius:0;margin-left:-1px;font-weight:500}
+.pseg button:first-child{margin-left:0}
+.pseg button.on{background:var(--ink);color:#fff;border-color:var(--ink);font-weight:600}
+.ptoggle{min-width:66px;background:#fff;color:var(--dim);border:1px solid var(--rule)}
+.ptoggle.on{background:var(--p4);border-color:var(--p4);color:#fff}
+@media (max-width:520px){.pgrid{grid-template-columns:1fr}.pin{width:70px}}
 .hint{
   display:block;background:var(--ink);color:var(--paper);
   font-family:"IBM Plex Mono",monospace;font-size:10.5px;letter-spacing:.06em;padding:5px 10px;
@@ -189,9 +220,18 @@ PURE HTML + CANVAS · NO LIBRARY</div>
   <div class="rack">
     <button data-act="linreg-noise">สุ่มข้อมูลใหม่</button>
     <button class="ghost" data-act="linreg-clear">ล้างจุดทั้งหมด</button>
-    <label>แสดง residual <input type="checkbox" id="linreg-res" checked></label>
     <span class="readout" id="linreg-out">—</span>
   </div>
+  <div class="params" data-params="linreg"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="linreg">กวาดค่า degree 1–8</button>
+      <button class="ghost" data-apply="linreg">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-linreg-out">—</span></div>
+    <div class="stage"><canvas id="tn-linreg" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>สมการ</h3><span class="eq">ŷ = w·x + b<br>Loss = Σ(y − ŷ)² / n</span></div>
     <div class="note"><h3>หาค่า w, b ยังไง</h3><p>ใช้สูตรปิด (closed form) จาก covariance ÷ variance หรือใช้ gradient descent ก็ได้ผลเดียวกัน</p></div>
@@ -211,12 +251,19 @@ print(model.coef_, model.intercept_, model.score(X_test, y_test))</pre></details
   <p class="lede">เอาเส้นตรงมาผ่านฟังก์ชัน sigmoid เพื่อบีบผลลัพธ์ให้อยู่ในช่วง 0–1 แล้วอ่านเป็น "ความน่าจะเป็นของคลาส" เฉดสีพื้นหลังคือความมั่นใจของโมเดล ยิ่งซีดแปลว่ายิ่งลังเล</p>
   <div class="stage"><canvas id="cv-logreg"></canvas><span class="hint">คลิก = เพิ่มจุดคลาสที่เลือก · โมเดลเทรนต่อทันที</span></div>
   <div class="rack">
-    <button data-act="logreg-train">เทรนใหม่</button>
-    <label>คลิกเพื่อเพิ่มคลาส
-      <select id="logreg-cls"><option value="0">คลาส A (น้ำเงิน)</option><option value="1">คลาส B (ชมพู)</option></select></label>
-    <label>learning rate <input type="range" id="logreg-lr" min="1" max="60" value="25"><span class="val" id="logreg-lrv">0.25</span></label>
+    <button data-act="logreg-train">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="logreg-out">—</span>
   </div>
+  <div class="params" data-params="logreg"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="logreg">กวาดค่า C</button>
+      <button class="ghost" data-apply="logreg">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-logreg-out">—</span></div>
+    <div class="stage"><canvas id="tn-logreg" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>สมการ</h3><span class="eq">z = w₁x₁ + w₂x₂ + b<br>p = 1 / (1 + e⁻ᶻ)</span></div>
     <div class="note"><h3>Loss</h3><p>Binary Cross-Entropy: −[y·log p + (1−y)·log(1−p)] ลดด้วย gradient descent</p></div>
@@ -235,10 +282,19 @@ proba = clf.predict_proba(X_test)[:, <span class="s">1</span>]  <span class="c">
   <p class="lede">kNN ไม่ "เรียน" อะไรเลย มันจำข้อมูลทั้งหมดไว้ พอมีจุดใหม่เข้ามาก็ดูเพื่อนบ้านที่ใกล้ที่สุด k ตัวแล้วโหวต — เลื่อนเมาส์บนกราฟเพื่อดูว่าใครคือเพื่อนบ้านของจุดนั้น</p>
   <div class="stage"><canvas id="cv-knn"></canvas><span class="hint">เลื่อนเมาส์/นิ้ว = ยิงจุดทดสอบ</span></div>
   <div class="rack">
-    <label>k = <input type="range" id="knn-k" min="1" max="25" step="2" value="5"><span class="val" id="knn-kv">5</span></label>
     <button data-act="knn-new">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="knn-out">—</span>
   </div>
+  <div class="params" data-params="knn"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="knn">กวาดค่า k</button>
+      <button class="ghost" data-apply="knn">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-knn-out">—</span></div>
+    <div class="stage"><canvas id="tn-knn" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>ระยะทาง</h3><span class="eq">d = √Σ(xᵢ − qᵢ)²</span></div>
     <div class="note"><h3>k เล็ก vs k ใหญ่</h3><p>k=1 เส้นแบ่งหยักมาก จำ noise (overfit) · k ใหญ่ เส้นเรียบขึ้นแต่กลืนรายละเอียด (underfit)</p></div>
@@ -258,11 +314,19 @@ clf = KNeighborsClassifier(n_neighbors=<span class="s">5</span>).fit(X_train, y_
   <p class="lede">ต้นไม้ถามคำถามทีละข้อ เช่น "x &lt; 0.42 ไหม" แล้วแบ่งข้อมูลเป็นสองฝั่ง เลือกคำถามที่ทำให้แต่ละฝั่ง "บริสุทธิ์" ที่สุด เส้นแบ่งจึงตั้งฉากกับแกนเสมอ ทำให้เกิดลายบล็อกแบบนี้</p>
   <div class="stage"><canvas id="cv-tree"></canvas><span class="hint">ซ้าย = พื้นที่ตัดสินใจ · ขวา = โครงต้นไม้</span></div>
   <div class="rack">
-    <label>ความลึกสูงสุด <input type="range" id="tree-d" min="1" max="7" value="3"><span class="val" id="tree-dv">3</span></label>
-    <select id="tree-data"><option value="moons">ข้อมูลรูปพระจันทร์</option><option value="blobs">ข้อมูลกระจุก</option><option value="xor">ข้อมูลแบบ XOR</option></select>
-    <button data-act="tree-new">สุ่มใหม่</button>
+    <button data-act="tree-new">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="tree-out">—</span>
   </div>
+  <div class="params" data-params="tree"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="tree">กวาดค่า max_depth</button>
+      <button class="ghost" data-apply="tree">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-tree-out">—</span></div>
+    <div class="stage"><canvas id="tn-tree" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>เกณฑ์แบ่ง</h3><span class="eq">Gini = 1 − Σ pᵢ²<br>เลือก split ที่ Gini ลดมากสุด</span></div>
     <div class="note"><h3>ลองเลื่อนดู</h3><p>ลึก 1–3 เส้นแบ่งเรียบง่าย พอลึก 6–7 จะเริ่มเกิดบล็อกเล็ก ๆ ล้อม noise รายจุด นั่นคือ overfitting เห็น ๆ</p></div>
@@ -281,11 +345,19 @@ plot_tree(clf, filled=<span class="k">True</span>)</pre></details>
   <p class="lede">ปลูกต้นไม้หลายต้น แต่ละต้นเห็นข้อมูลคนละชุด (bootstrap) แล้วให้โหวตกัน ต้นเดียวเส้นแบ่งจะแข็งเป็นบล็อก พอรวมหลายต้นขอบจะนุ่มลงเพราะเป็นสัดส่วนคะแนนโหวต — เลื่อนจำนวนต้นไม้ดูความต่าง</p>
   <div class="stage"><canvas id="cv-forest" class="sq"></canvas><span class="hint">ความเข้มของสี = สัดส่วนต้นไม้ที่โหวตคลาสนั้น</span></div>
   <div class="rack">
-    <label>จำนวนต้นไม้ <input type="range" id="rf-n" min="1" max="40" value="12"><span class="val" id="rf-nv">12</span></label>
-    <label>ความลึก <input type="range" id="rf-d" min="1" max="7" value="4"><span class="val" id="rf-dv">4</span></label>
     <button data-act="rf-new">ปลูกป่าใหม่</button>
     <span class="readout" id="rf-out">—</span>
   </div>
+  <div class="params" data-params="forest"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="forest">กวาดจำนวนต้นไม้</button>
+      <button class="ghost" data-apply="forest">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-forest-out">—</span></div>
+    <div class="stage"><canvas id="tn-forest" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>ความสุ่ม 2 ชั้น</h3><p>1) สุ่มตัวอย่างแบบมีคืนที่ (bootstrap) 2) สุ่มฟีเจอร์ที่ใช้พิจารณาในแต่ละ node</p></div>
     <div class="note"><h3>ทำไมถึงดีขึ้น</h3><span class="eq">Var(ค่าเฉลี่ยของ T ต้น) ≈ Var / T<br>(เมื่อต้นไม้ไม่สัมพันธ์กัน)</span></div>
@@ -305,11 +377,19 @@ print(rf.oob_score_, rf.feature_importances_)</pre></details>
   <p class="lede">SVM ไม่ได้หาเส้นแบ่ง "เส้นไหนก็ได้" แต่หาเส้นที่มี <em>ช่องว่างกว้างที่สุด</em>ระหว่างสองคลาส จุดที่มีวงกลมล้อมคือ support vector — มีแค่จุดพวกนี้ที่กำหนดเส้น จุดอื่นถอดออกได้เลย</p>
   <div class="stage"><canvas id="cv-svm" class="sq"></canvas><span class="hint">เส้นทึบ = decision boundary · เส้นประ = ขอบ margin</span></div>
   <div class="rack">
-    <label>C (ความเข้มงวด) <input type="range" id="svm-c" min="1" max="100" value="25"><span class="val" id="svm-cv">1.0</span></label>
-    <select id="svm-data"><option value="sep">แยกกันชัด</option><option value="mix">ซ้อนทับกัน</option></select>
-    <button data-act="svm-new">สุ่มใหม่</button>
+    <button data-act="svm-new">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="svm-out">—</span>
   </div>
+  <div class="params" data-params="svm"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="svm">กวาดค่า C</button>
+      <button class="ghost" data-apply="svm">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-svm-out">—</span></div>
+    <div class="stage"><canvas id="tn-svm" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>เป้าหมาย</h3><span class="eq">min ½‖w‖² + C·Σ max(0, 1 − yᵢ·f(xᵢ))</span></div>
     <div class="note"><h3>C คืออะไร</h3><p>C ต่ำ = ยอมให้จุดหลุดเข้ามาในช่องได้ margin กว้าง · C สูง = บังคับให้ถูกทุกจุด margin แคบและเสี่ยง overfit</p></div>
@@ -328,12 +408,22 @@ print(clf.support_vectors_.shape)</pre></details>
   <p class="lede">ไม่มีเฉลย ไม่มี label — อัลกอริทึมสลับทำสองอย่างวนไป: จับทุกจุดเข้าศูนย์กลางที่ใกล้ที่สุด แล้วย้ายศูนย์กลางไปกลางกลุ่มของตัวเอง กดเดินทีละรอบเพื่อดูศูนย์กลางค่อย ๆ ไถลเข้าที่</p>
   <div class="stage"><canvas id="cv-kmeans" class="sq"></canvas><span class="hint">กากบาท = centroid · เส้นจาง = เส้นทางที่ centroid เคลื่อนมา</span></div>
   <div class="rack">
-    <label>k = <input type="range" id="km-k" min="2" max="6" value="3"><span class="val" id="km-kv">3</span></label>
     <button data-act="km-step">เดิน 1 รอบ</button>
     <button data-act="km-run">เล่นอัตโนมัติ</button>
+    <button class="ghost" data-act="km-best">รันจนลู่เข้า</button>
     <button class="ghost" data-act="km-new">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="km-out">—</span>
   </div>
+  <div class="params" data-params="kmeans"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="kmeans">กวาดค่า k (elbow + silhouette)</button>
+      <button class="ghost" data-apply="kmeans">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-kmeans-out">—</span></div>
+    <div class="stage"><canvas id="tn-kmeans" class="wide"></canvas>
+      <span class="hint">เส้นประ = inertia (สเกลแล้ว) · เส้นทึบ = silhouette · วงกลมส้ม = k ที่ silhouette สูงสุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>ค่าที่พยายามลด</h3><span class="eq">Inertia = Σ ‖x − μ_c(x)‖²</span></div>
     <div class="note"><h3>เลือก k ยังไง</h3><p>วาดกราฟ inertia เทียบ k แล้วหา "ข้อศอก" (elbow) หรือใช้ silhouette score ช่วยตัดสิน</p></div>
@@ -354,10 +444,18 @@ labels, centers = km.labels_, km.cluster_centers_</pre></details>
   <div class="rack">
     <button data-act="mlp-run">เริ่ม / หยุดเทรน</button>
     <button class="ghost" data-act="mlp-reset">รีเซ็ตน้ำหนัก</button>
-    <label>hidden units <input type="range" id="mlp-h" min="2" max="16" value="8"><span class="val" id="mlp-hv">8</span></label>
-    <label>learning rate <input type="range" id="mlp-lr" min="1" max="50" value="15"><span class="val" id="mlp-lrv">0.15</span></label>
     <span class="readout" id="mlp-out">—</span>
   </div>
+  <div class="params" data-params="mlp"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="mlp">กวาดขนาด hidden layer</button>
+      <button class="ghost" data-apply="mlp">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-mlp-out">—</span></div>
+    <div class="stage"><canvas id="tn-mlp" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>Forward</h3><span class="eq">h = tanh(W₁x + b₁)<br>ŷ = σ(W₂h + b₂)</span></div>
     <div class="note"><h3>Backward</h3><p>ไล่ chain rule จาก loss ย้อนกลับไปทุกน้ำหนัก แล้วขยับสวนทาง gradient</p></div>
@@ -378,17 +476,20 @@ loss_fn, opt = nn.BCEWithLogitsLoss(), torch.optim.Adam(model.parameters(), <spa
   <p class="lede">หัวใจของ CNN คือเลื่อนหน้าต่างเล็ก ๆ (kernel) ไปทั่วภาพแล้วคูณ-บวก ได้ feature map ที่ตอบสนองต่อลวดลายบางอย่าง เช่น ขอบแนวตั้ง — <strong>วาดบนตารางซ้ายด้วยเมาส์ได้เลย</strong> แล้วดูผลลัพธ์เปลี่ยนสด ๆ</p>
   <div class="stage"><canvas id="cv-cnn"></canvas><span class="hint">ลากบนภาพอินพุตเพื่อวาด · คลิกขวา/ลากพร้อม Shift เพื่อลบ</span></div>
   <div class="rack">
-    <label>kernel <select id="cnn-k">
-      <option value="sobelx">Sobel X — ขอบแนวตั้ง</option>
-      <option value="sobely">Sobel Y — ขอบแนวนอน</option>
-      <option value="blur">Blur — เกลี่ยเรียบ</option>
-      <option value="sharp">Sharpen — เน้นคม</option>
-      <option value="emboss">Emboss — นูน</option></select></label>
     <button data-act="cnn-anim">เล่นการเลื่อน kernel</button>
     <button class="ghost" data-act="cnn-clear">ล้างภาพ</button>
-    <button class="ghost" data-act="cnn-preset">ใส่รูปตัวอย่าง</button>
+    <button class="ghost" data-act="cnn-preset">รูปตัวอย่าง</button>
     <span class="readout" id="cnn-out">—</span>
   </div>
+  <div class="params" data-params="cnn"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="cnn">เทียบทุกชุดค่า kernel / stride / padding</button>
+      <span class="readout" id="tn-cnn-out">—</span></div>
+    <div class="stage"><canvas id="tn-cnn" class="wide"></canvas>
+      <span class="hint">แท่งสีส้ม = ค่าที่ตั้งอยู่ตอนนี้ · ตัวเลขบนแท่งคือขนาด feature map ที่ได้</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>การคำนวณ</h3><span class="eq">out(i,j) = Σₘ Σₙ in(i+m, j+n) · K(m,n)</span></div>
     <div class="note"><h3>ทำไมไม่ใช้ MLP</h3><p>CNN ใช้น้ำหนักร่วมกันทั้งภาพ (weight sharing) พารามิเตอร์น้อยลงมหาศาลและทนต่อการเลื่อนตำแหน่ง</p></div>
@@ -414,6 +515,16 @@ cnn = nn.Sequential(
     <button class="ghost" data-act="lstm-reset">เริ่มใหม่</button>
     <span class="readout" id="lstm-out">—</span>
   </div>
+  <div class="params" data-params="lstm"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="lstm">กวาดค่า forget bias</button>
+      <button class="ghost" data-apply="lstm">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-lstm-out">—</span></div>
+    <div class="stage"><canvas id="tn-lstm" class="wide"></canvas>
+      <span class="hint">ยิ่งสูง = ประตูลืมเปิดกว้าง ความจำอยู่ได้นานขึ้น · วงกลมส้ม = ค่าที่จำได้นานที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>สามประตู</h3><span class="eq">f = σ(Wf·[h,x])  ลืม
 i = σ(Wi·[h,x])  รับเข้า
@@ -436,12 +547,18 @@ pred = nn.Linear(<span class="s">64</span>, <span class="s">1</span>)(out[:, -<s
   <p class="lede">แทนที่จะไล่อ่านทีละคำแบบ LSTM ทุกคำมองเห็นทุกคำพร้อมกัน แล้วให้ "คะแนนความสนใจ" กันเอง ตารางคือ attention matrix — แถวคือคำที่กำลังมอง คอลัมน์คือคำที่ถูกมอง ยิ่งเข้มยิ่งสนใจมาก</p>
   <div class="stage"><canvas id="cv-attn" class="tall"></canvas><span class="hint">เลื่อนเมาส์บนตารางหรือบนคำ เพื่อดูเส้นเชื่อมความสนใจ</span></div>
   <div class="rack">
-    <label>ประโยค <select id="attn-s">
-      <option value="0">the cat sat on the mat because it was warm</option>
-      <option value="1">a model learns patterns from data over time</option></select></label>
-    <label>head <select id="attn-h"><option value="0">head 1</option><option value="1">head 2</option><option value="2">head 3</option></select></label>
     <span class="readout" id="attn-out">—</span>
   </div>
+  <div class="params" data-params="attn"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="attn">กวาดค่า temperature</button>
+      <button class="ghost" data-apply="attn">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-attn-out">—</span></div>
+    <div class="stage"><canvas id="tn-attn" class="wide"></canvas>
+      <span class="hint">entropy ต่ำ = attention เจาะจงไม่กี่คำ · entropy สูง = เกลี่ยความสนใจทั่วประโยค</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>สมการหลัก</h3><span class="eq">Attention(Q,K,V) =
 softmax(QKᵀ / √d_k) · V</span></div>
@@ -465,10 +582,18 @@ out    = attn @ V
   <div class="rack">
     <button data-act="rl-run">เริ่ม / หยุดเรียนรู้</button>
     <button class="ghost" data-act="rl-reset">ลืมทุกอย่าง</button>
-    <label>ε (สำรวจ) <input type="range" id="rl-e" min="0" max="80" value="25"><span class="val" id="rl-ev">0.25</span></label>
-    <label>ความเร็ว <input type="range" id="rl-sp" min="1" max="40" value="12"><span class="val" id="rl-spv">12</span></label>
     <span class="readout" id="rl-out">—</span>
   </div>
+  <div class="params" data-params="rl"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="rl">กวาดค่า ε</button>
+      <button class="ghost" data-apply="rl">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-rl-out">—</span></div>
+    <div class="stage"><canvas id="tn-rl" class="wide"></canvas>
+      <span class="hint">แต่ละจุดคือการเทรนเอเจนต์ใหม่ 400 episode ด้วยค่า ε นั้น · วงกลมส้ม = ค่าที่ได้รางวัลเฉลี่ยสูงสุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>กฎอัปเดต</h3><span class="eq">Q(s,a) ← Q(s,a) + α[ r
   + γ·max Q(s',a') − Q(s,a) ]</span></div>
@@ -493,12 +618,19 @@ out    = attn @ V
   <p class="lede">ต่างจาก Random Forest ที่ปลูกต้นไม้พร้อมกันแล้วโหวต — boosting ปลูก <em>ทีละต้นตามลำดับ</em> โดยต้นใหม่มีหน้าที่แก้ส่วนที่ต้นก่อนหน้าทำพลาด (residual) เลื่อนจำนวนรอบเพื่อดูเส้นทำนายค่อย ๆ เข้ารูป</p>
   <div class="stage"><canvas id="cv-xgb" class="tall"></canvas><span class="hint">บน = ค่าทำนายรวม · ล่าง = residual ที่เหลือให้ต้นถัดไปแก้</span></div>
   <div class="rack">
-    <label>จำนวนรอบ <input type="range" id="xgb-n" min="0" max="80" value="10"><span class="val" id="xgb-nv">10</span></label>
-    <label>learning rate <input type="range" id="xgb-lr" min="2" max="60" value="20"><span class="val" id="xgb-lrv">0.20</span></label>
-    <label>ความลึกต้นไม้ <input type="range" id="xgb-d" min="1" max="4" value="2"><span class="val" id="xgb-dv">2</span></label>
     <button data-act="xgb-new">สุ่มข้อมูลใหม่</button>
     <span class="readout" id="xgb-out">—</span>
   </div>
+  <div class="params" data-params="xgb"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="xgb">กวาดจำนวนรอบ (หาจุด early stopping)</button>
+      <button class="ghost" data-apply="xgb">ใช้ค่าที่ดีที่สุด</button>
+      <span class="readout" id="tn-xgb-out">—</span></div>
+    <div class="stage"><canvas id="tn-xgb" class="wide"></canvas>
+      <span class="hint">เส้นประ = คะแนนบนชุดเทรน · เส้นทึบ = คะแนนบนชุด validation · วงกลมส้ม = ค่าที่ดีที่สุด</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>สูตรสะสม</h3><span class="eq">F₀ = ค่าเฉลี่ย
 Fₘ = Fₘ₋₁ + η · hₘ(x)
@@ -522,9 +654,17 @@ model.fit(X_tr, y_tr, eval_set=[(X_va, y_va)], verbose=<span class="k">False</sp
   <div class="stage"><canvas id="cv-stack" class="tall"></canvas><span class="hint">สามช่องซ้าย = base models · ช่องขวา = meta-learner</span></div>
   <div class="rack">
     <button data-act="stack-new">สุ่มข้อมูลใหม่</button>
-    <select id="stack-data"><option value="moons">พระจันทร์ซ้อน</option><option value="xor">XOR</option><option value="circle">วงกลมซ้อน</option></select>
     <span class="readout" id="stack-out">—</span>
   </div>
+  <div class="params" data-params="stack"></div>
+  <div class="tune">
+    <div class="tune-head"><h3>Hyperparameter tuning</h3>
+      <button data-tune="stack">เทียบ base models กับ stacked</button>
+      <span class="readout" id="tn-stack-out">—</span></div>
+    <div class="stage"><canvas id="tn-stack" class="wide"></canvas>
+      <span class="hint">ทุกแท่งวัดบนชุด validation เดียวกัน · แท่งเขียว = ผลของ stacking</span></div>
+  </div>
+
   <div class="notes">
     <div class="note"><h3>ขั้นตอน</h3><p>1) เทรน base models ด้วย cross-validation 2) เก็บคำทำนาย out-of-fold เป็นฟีเจอร์ใหม่ 3) เทรน meta-learner บนฟีเจอร์นั้น</p></div>
     <div class="note"><h3>กฎเหล็ก</h3><p>ต้องใช้คำทำนาย out-of-fold เท่านั้น ถ้าใช้คำทำนายจากข้อมูลที่ base เคยเห็น meta จะได้ข้อมูลรั่วและมั่นใจเกินจริง</p></div>
@@ -545,10 +685,14 @@ stack = StackingClassifier(
 <footer>
   <hr>
   <p><strong>หมายเหตุการจัดกลุ่ม:</strong> หน้านี้เรียงลำดับตามใบงาน ในทางวิชาการ CNN / LSTM / Transformer ถือเป็นสถาปัตยกรรม <em>deep learning</em> ที่ปกติเทรนแบบ supervised (หรือ self-supervised) ส่วน K-Means เป็น unsupervised แท้ ๆ — บนหน้าเว็บจึงจัดกลุ่มตามความเป็นจริงไว้ในแถบเมนู เผื่ออาจารย์ถาม</p>
+  <p><strong>วิธีปรับ hyperparameter:</strong> ทุกแผ่นมีแผง "ปรับ hyperparameter" ใต้เดโม แต่ละพารามิเตอร์มีช่องพิมพ์ค่าเองได้ตรง ๆ พร้อมปุ่ม − / + สำหรับขยับทีละขั้น และแถบเลื่อนสำหรับกวาดดูเร็ว ๆ พิมพ์แล้วกด Enter หรือกดลูกศรขึ้น-ลงบนคีย์บอร์ดก็ได้ ค่าที่เกินช่วงจะถูกดึงกลับมาที่ขอบให้อัตโนมัติ และปุ่ม "คืนค่าเริ่มต้นทั้งหมด" จะรีเซ็ตทั้งแผ่น</p>
+  <p><strong>เรื่อง validation curve:</strong> ใต้แผงปรับค่าคือแถบ tuning กดปุ่มแล้วหน้าเว็บจะเทรนโมเดลใหม่จริง ๆ ทีละค่าตลอดช่วงที่กำหนด แล้ววาด validation curve ให้ ข้อมูลถูกแบ่ง train/validation ด้วย seed คงที่ทุกแผ่น จุดทึบคือชุดเทรน จุดวงกลมกลวงคือชุด validation ตัวเลขความแม่นที่รายงานในแถบ tuning วัดบนชุด validation เสมอ</p>
+  <p>ระวังจุดที่มักโดนถามในการนำเสนอ: เส้น train ที่ดีขึ้นเรื่อย ๆ ขณะเส้น validation เริ่มแย่ลงคือ overfitting และค่าที่ดีที่สุดต้องเลือกจากเส้น validation เท่านั้น ไม่ใช่เส้น train</p>
   <p>ทุกเดโมคำนวณด้วย JavaScript ล้วนบน <code>&lt;canvas&gt;</code> ไม่มีไลบรารีภายนอก เปิดผ่าน GitHub Pages ได้ทันที</p>
 </footer>
 
 <script>
+
 "use strict";
 /* ============ helpers ============ */
 const C={p1:"#0B6E99",p2:"#CC2F6B",p3:"#DD5606",p4:"#1F7A3D",p5:"#5F3DC4",p6:"#8A6D00",
@@ -558,13 +702,13 @@ function stage(id){
   const c=document.getElementById(id);
   const dpr=Math.min(2,window.devicePixelRatio||1);
   const r=c.getBoundingClientRect();
-  const w=Math.max(320,r.width), h=Math.max(200,r.height);
+  const w=Math.max(300,r.width), h=Math.max(120,r.height);
   c.width=Math.round(w*dpr); c.height=Math.round(h*dpr);
   const g=c.getContext("2d"); g.setTransform(dpr,0,0,dpr,0,0);
   g.clearRect(0,0,w,h);
   return {c,g,w,h};
 }
-function rng(seed){let s=seed%2147483647; if(s<=0)s+=2147483646;
+function rng(seed){let s=Math.floor(seed)%2147483647; if(s<=0)s+=2147483646;
   return ()=>{s=(s*16807)%2147483647; return (s-1)/2147483646;};}
 function gauss(R){let u=0,v=0; while(!u)u=R(); while(!v)v=R();
   return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
@@ -576,26 +720,55 @@ function grid(g,x,y,w,h,n){
   g.strokeStyle=C.rule; g.strokeRect(x+.5,y+.5,w,h); g.restore();
 }
 function label(g,t,x,y,col,size,align){
-  g.save(); g.fillStyle=col||C.dim; g.font=(size||11)+"px 'IBM Plex Mono','IBM Plex Sans Thai',monospace";
+  g.save(); g.fillStyle=col||C.dim;
+  g.font=(size||11)+"px 'IBM Plex Mono','IBM Plex Sans Thai',monospace";
   g.textAlign=align||"left"; g.textBaseline="alphabetic"; g.fillText(t,x,y); g.restore();
 }
 function dot(g,x,y,r,fill,stroke){
   g.beginPath(); g.arc(x,y,r,0,6.2832); g.fillStyle=fill; g.fill();
   if(stroke){g.strokeStyle=stroke; g.lineWidth=1.2; g.stroke();}
 }
+function ring(g,x,y,r,col){g.beginPath(); g.arc(x,y,r,0,6.2832);
+  g.fillStyle="#fff"; g.fill(); g.strokeStyle=col; g.lineWidth=1.6; g.stroke();}
 function hex2rgba(h,a){const n=parseInt(h.slice(1),16);
   return `rgba(${n>>16&255},${n>>8&255},${n&255},${a})`;}
 function pointerPos(c,e){const r=c.getBoundingClientRect();
   const p=e.touches?e.touches[0]:e; return {x:p.clientX-r.left,y:p.clientY-r.top};}
-
-/* animation registry */
+function fmtG(v){
+  if(v===0) return "0";
+  const a=Math.abs(v);
+  if(a>=1000||a<0.01) return v.toExponential(0).replace("e+","e");
+  if(a>=100) return v.toFixed(0);
+  if(a>=10) return v.toFixed(1);
+  if(a>=1) return String(Math.round(v*100)/100);
+  return String(Math.round(v*1000)/1000);
+}
 const RAF={};
 function loop(name,fn){stop(name); const step=()=>{fn(); RAF[name]=requestAnimationFrame(step);};
   RAF[name]=requestAnimationFrame(step);}
 function stop(name){if(RAF[name]){cancelAnimationFrame(RAF[name]); RAF[name]=null;}}
 function stopAll(){Object.keys(RAF).forEach(stop);}
 
-/* ============ shared datasets ============ */
+/* ============ linear algebra ============ */
+function solve(A,b){
+  const n=b.length;
+  for(let i=0;i<n;i++){
+    let p=i; for(let r=i+1;r<n;r++) if(Math.abs(A[r][i])>Math.abs(A[p][i])) p=r;
+    const tA=A[i]; A[i]=A[p]; A[p]=tA; const tb=b[i]; b[i]=b[p]; b[p]=tb;
+    const d=A[i][i]||1e-12;
+    for(let r=i+1;r<n;r++){const f=A[r][i]/d; if(!f) continue;
+      for(let c=i;c<n;c++) A[r][c]-=f*A[i][c];
+      b[r]-=f*b[i];}
+  }
+  const x=new Array(n).fill(0);
+  for(let i=n-1;i>=0;i--){let s=b[i];
+    for(let c=i+1;c<n;c++) s-=A[i][c]*x[c];
+    x[i]=s/(A[i][i]||1e-12);}
+  return x;
+}
+
+/* ============ datasets & splitting ============ */
+function clamp01(v){return Math.min(.98,Math.max(.02,v));}
 function makeMoons(n,noise,R){
   const P=[];
   for(let i=0;i<n;i++){
@@ -603,27 +776,26 @@ function makeMoons(n,noise,R){
     P.push({x:.32+.30*Math.cos(t)+noise*gauss(R), y:.62-.30*Math.sin(t)+noise*gauss(R), l:0});
     P.push({x:.68-.30*Math.cos(t)+noise*gauss(R), y:.38+.30*Math.sin(t)+noise*gauss(R), l:1});
   }
-  return P.map(p=>({x:Math.min(.98,Math.max(.02,p.x)),y:Math.min(.98,Math.max(.02,p.y)),l:p.l}));
+  return P.map(p=>({x:clamp01(p.x),y:clamp01(p.y),l:p.l}));
 }
 function makeBlobs(nPer,centers,R,spread){
   const P=[];
   centers.forEach((c,i)=>{for(let k=0;k<nPer;k++)
-    P.push({x:Math.min(.97,Math.max(.03,c[0]+(spread||.09)*gauss(R))),
-            y:Math.min(.97,Math.max(.03,c[1]+(spread||.09)*gauss(R))),l:i});});
+    P.push({x:clamp01(c[0]+(spread||.09)*gauss(R)),y:clamp01(c[1]+(spread||.09)*gauss(R)),l:i});});
   return P;
 }
 function makeXor(n,R){
   const P=[];
-  for(let i=0;i<n;i++){const x=R(),y=R();
+  for(let i=0;i<n;i++){const x=.03+.94*R(),y=.03+.94*R();
     P.push({x,y,l:((x>.5)!==(y>.5))?1:0});}
   return P;
 }
 function makeCircles(n,R){
   const P=[];
   for(let i=0;i<n;i++){
-    const a=R()*6.2832, r1=.12+.06*R(), r2=.34+.06*R();
-    P.push({x:.5+r1*Math.cos(a),y:.5+r1*Math.sin(a),l:0});
-    P.push({x:.5+r2*Math.cos(a),y:.5+r2*Math.sin(a),l:1});
+    const a=R()*6.2832, r1=.10+.07*R(), r2=.30+.07*R();
+    P.push({x:clamp01(.5+r1*Math.cos(a)),y:clamp01(.5+r1*Math.sin(a)),l:0});
+    P.push({x:clamp01(.5+r2*Math.cos(a)),y:clamp01(.5+r2*Math.sin(a)),l:1});
   }
   return P;
 }
@@ -633,22 +805,31 @@ function makeSpiral(n,R){
     const t=i/n*3.4, r=.04+.145*t;
     for(let c=0;c<2;c++){
       const a=t*1.75+c*Math.PI+.14*gauss(R);
-      P.push({x:.5+r*Math.cos(a),y:.5+r*Math.sin(a),l:c});
+      P.push({x:clamp01(.5+r*Math.cos(a)),y:clamp01(.5+r*Math.sin(a)),l:c});
     }
   }
   return P;
 }
+function splitData(pts,frac,seed){
+  const R=rng(seed||42), a=pts.slice();
+  for(let i=a.length-1;i>0;i--){const j=Math.floor(R()*(i+1)); const t=a[i]; a[i]=a[j]; a[j]=t;}
+  const n=Math.max(2,Math.round(a.length*(frac||.65)));
+  return {tr:a.slice(0,n), va:a.slice(n)};
+}
 
-/* ============ shared models ============ */
-function gini(counts,n){let s=0; for(const c of counts){const p=c/n; s+=p*p;} return 1-s;}
-function buildTree(pts,depth,maxDepth,nc,featSub,R){
-  const n=pts.length;
-  const cnt=new Array(nc).fill(0); pts.forEach(p=>cnt[p.l]++);
-  const maj=cnt.indexOf(Math.max(...cnt));
-  const probs=cnt.map(c=>c/Math.max(1,n));
-  if(depth>=maxDepth||n<4||cnt[maj]===n) return {leaf:true,cls:maj,probs};
+/* ============ models ============ */
+function imp(cnt,n,crit){
+  if(crit==="entropy"){let s=0; for(const c of cnt){if(c){const p=c/n; s-=p*Math.log2(p);}} return s;}
+  let s=0; for(const c of cnt){const p=c/n; s+=p*p;} return 1-s;
+}
+function buildTree(pts,o,depth){
+  depth=depth||0;
+  const nc=o.nc||2, n=pts.length, cnt=new Array(nc).fill(0);
+  pts.forEach(p=>cnt[p.l]++);
+  const maj=cnt.indexOf(Math.max(...cnt)), probs=cnt.map(c=>c/Math.max(1,n));
+  if(depth>=o.maxDepth||n<2*o.minLeaf||cnt[maj]===n) return {leaf:true,cls:maj,probs};
   let best=null;
-  const dims = featSub ? (R()<.5?["x"]:["y"]) : ["x","y"];
+  const dims = o.featSub ? (o.R()<.5?["x"]:["y"]) : ["x","y"];
   for(const d of dims){
     const vals=pts.map(p=>p[d]).sort((a,b)=>a-b);
     const tries=Math.min(24,vals.length-1);
@@ -657,39 +838,589 @@ function buildTree(pts,depth,maxDepth,nc,featSub,R){
       const th=(vals[idx]+vals[idx+1])/2;
       const L=[],Rt=[];
       for(const p of pts)(p[d]<th?L:Rt).push(p);
-      if(L.length<2||Rt.length<2) continue;
+      if(L.length<o.minLeaf||Rt.length<o.minLeaf) continue;
       const cl=new Array(nc).fill(0),cr=new Array(nc).fill(0);
       L.forEach(p=>cl[p.l]++); Rt.forEach(p=>cr[p.l]++);
-      const sc=(L.length*gini(cl,L.length)+Rt.length*gini(cr,Rt.length))/n;
+      const sc=(L.length*imp(cl,L.length,o.crit)+Rt.length*imp(cr,Rt.length,o.crit))/n;
       if(!best||sc<best.sc) best={sc,d,th,L,R:Rt};
     }
   }
   if(!best) return {leaf:true,cls:maj,probs};
   return {leaf:false,d:best.d,th:best.th,
-    left:buildTree(best.L,depth+1,maxDepth,nc,featSub,R),
-    right:buildTree(best.R,depth+1,maxDepth,nc,featSub,R)};
+    left:buildTree(best.L,o,depth+1), right:buildTree(best.R,o,depth+1)};
 }
-function treeProbs(t,x,y){
-  while(!t.leaf) t = ((t.d==="x"?x:y) < t.th) ? t.left : t.right;
-  return t.probs;
-}
+function treeProbs(t,x,y){while(!t.leaf) t=((t.d==="x"?x:y)<t.th)?t.left:t.right; return t.probs;}
 function treePredict(t,x,y){const p=treeProbs(t,x,y); return p.indexOf(Math.max(...p));}
 function treeDepth(t){return t.leaf?1:1+Math.max(treeDepth(t.left),treeDepth(t.right));}
 function treeLeaves(t){return t.leaf?1:treeLeaves(t.left)+treeLeaves(t.right);}
 
-function trainLogreg(pts,epochs,lr){
-  let w1=0,w2=0,b=0;
-  for(let e=0;e<epochs;e++){
-    let g1=0,g2=0,gb=0;
-    for(const p of pts){
-      const z=w1*p.x+w2*p.y+b, s=1/(1+Math.exp(-z)), d=s-p.l;
-      g1+=d*p.x; g2+=d*p.y; gb+=d;
-    }
-    const n=Math.max(1,pts.length);
-    w1-=lr*g1/n; w2-=lr*g2/n; b-=lr*gb/n;
+function knnVote(train,x,y,k,nc,weights,p){
+  const d=train.map(t=>({l:t.l, d: p===1
+      ? Math.abs(t.x-x)+Math.abs(t.y-y)
+      : Math.sqrt((t.x-x)*(t.x-x)+(t.y-y)*(t.y-y))}));
+  d.sort((a,b)=>a.d-b.d);
+  const kk=Math.min(k,d.length), out=new Array(nc).fill(0);
+  let sum=0;
+  for(let i=0;i<kk;i++){
+    const w = weights==="distance" ? 1/(d[i].d+1e-6) : 1;
+    out[d[i].l]+=w; sum+=w;
   }
-  return {w1,w2,b};
+  return out.map(v=>v/(sum||1));
 }
+function knnNeighbors(train,x,y,k,p){
+  const d=train.map(t=>({t, d: p===1
+      ? Math.abs(t.x-x)+Math.abs(t.y-y)
+      : Math.sqrt((t.x-x)*(t.x-x)+(t.y-y)*(t.y-y))}));
+  d.sort((a,b)=>a.d-b.d);
+  return d.slice(0,Math.min(k,d.length));
+}
+
+function polyFeat(x,y,deg){
+  const f=[];
+  for(let t=1;t<=deg;t++) for(let a=t;a>=0;a--) f.push(Math.pow(x,a)*Math.pow(y,t-a));
+  return f;
+}
+function fitLogit(pts,deg,Creg,epochs){
+  const X=pts.map(p=>polyFeat(2*p.x-1,2*p.y-1,deg));
+  const d=X[0].length, n=X.length, lam=1/(Creg*n);
+  let w=new Array(d).fill(0), b=0;
+  for(let e=0;e<(epochs||400);e++){
+    const g=new Array(d).fill(0); let gb=0;
+    for(let i=0;i<n;i++){
+      let z=b; for(let j=0;j<d;j++) z+=w[j]*X[i][j];
+      const s=1/(1+Math.exp(-z)), dd=s-pts[i].l;
+      for(let j=0;j<d;j++) g[j]+=dd*X[i][j];
+      gb+=dd;
+    }
+    for(let j=0;j<d;j++) w[j]-=1.2*(g[j]/n+lam*w[j]);
+    b-=1.2*gb/n;
+  }
+  return {w,b,deg};
+}
+function predLogit(m,x,y){
+  const f=polyFeat(2*x-1,2*y-1,m.deg);
+  let z=m.b; for(let j=0;j<m.w.length;j++) z+=m.w[j]*f[j];
+  return 1/(1+Math.exp(-z));
+}
+
+function fitSVM(pts,o){
+  const n=pts.length, lam=1/(o.C*n), T=o.T||4000, R=rng(o.seed||7);
+  const a=new Array(n).fill(0);
+  const kf = o.kernel==="rbf"
+    ? (p,x,y)=>Math.exp(-o.gamma*((2*p.x-2*x)*(2*p.x-2*x)+(2*p.y-2*y)*(2*p.y-2*y)))
+    : (p,x,y)=>(2*p.x-1)*(2*x-1)+(2*p.y-1)*(2*y-1)+1;
+  const nz=[];
+  for(let t=1;t<=T;t++){
+    const i=Math.floor(R()*n), p=pts[i];
+    let s=0; for(const j of nz) s+=a[j]*pts[j].s*kf(pts[j],p.x,p.y);
+    if(p.s*s/(lam*t)<1){ if(!a[i]) nz.push(i); a[i]++; }
+  }
+  const scale=1/(lam*T);
+  return {a,nz,pts,kf,scale,
+    f(x,y){let s=0; for(const j of this.nz) s+=this.a[j]*this.pts[j].s*this.kf(this.pts[j],x,y);
+      return s*this.scale;}};
+}
+
+function kmeansPP(pts,k,R,plusplus){
+  const cs=[{x:pts[Math.floor(R()*pts.length)].x, y:pts[Math.floor(R()*pts.length)].y}];
+  while(cs.length<k){
+    if(!plusplus){const p=pts[Math.floor(R()*pts.length)]; cs.push({x:p.x,y:p.y}); continue;}
+    const d=pts.map(p=>Math.min(...cs.map(c=>(p.x-c.x)*(p.x-c.x)+(p.y-c.y)*(p.y-c.y))));
+    const sum=d.reduce((a,b)=>a+b,0)||1;
+    let r=R()*sum, i=0;
+    while(i<d.length-1 && r>d[i]){r-=d[i]; i++;}
+    cs.push({x:pts[i].x,y:pts[i].y});
+  }
+  return cs;
+}
+function kmAssign(pts,cent){
+  let inertia=0;
+  pts.forEach(p=>{let bi=0,bd=1e9;
+    cent.forEach((c,i)=>{const d=(p.x-c.x)*(p.x-c.x)+(p.y-c.y)*(p.y-c.y); if(d<bd){bd=d;bi=i;}});
+    p.c=bi; inertia+=bd;});
+  return inertia;
+}
+function kmUpdate(pts,cent){
+  const s=cent.map(()=>({x:0,y:0,n:0}));
+  pts.forEach(p=>{s[p.c].x+=p.x; s[p.c].y+=p.y; s[p.c].n++;});
+  let moved=0;
+  cent.forEach((c,i)=>{if(s[i].n){
+    const nx=s[i].x/s[i].n, ny=s[i].y/s[i].n;
+    moved+=Math.hypot(nx-c.x,ny-c.y); c.x=nx; c.y=ny;}});
+  return moved;
+}
+function kmRun(pts,k,seed,plusplus,nInit){
+  let bestC=null,bestI=1e18;
+  for(let t=0;t<(nInit||1);t++){
+    const R=rng(seed+t*977), cent=kmeansPP(pts,k,R,plusplus);
+    let inertia=kmAssign(pts,cent);
+    for(let it=0;it<60;it++){ if(kmUpdate(pts,cent)<1e-5) break; inertia=kmAssign(pts,cent); }
+    if(inertia<bestI){bestI=inertia; bestC=cent.map(c=>({x:c.x,y:c.y}));}
+  }
+  kmAssign(pts,bestC);
+  return {cent:bestC,inertia:bestI};
+}
+function silhouette(pts,cent){
+  if(cent.length<2) return 0;
+  let tot=0;
+  for(const p of pts){
+    const grp=[]; cent.forEach(()=>grp.push([]));
+    pts.forEach(q=>grp[q.c].push(q));
+    let a=0,na=0;
+    for(const q of grp[p.c]) if(q!==p){a+=Math.hypot(p.x-q.x,p.y-q.y); na++;}
+    a=na?a/na:0;
+    let b=1e9;
+    for(let i=0;i<cent.length;i++){
+      if(i===p.c||!grp[i].length) continue;
+      let s=0; for(const q of grp[i]) s+=Math.hypot(p.x-q.x,p.y-q.y);
+      b=Math.min(b,s/grp[i].length);
+    }
+    if(b<1e8) tot += (b-a)/Math.max(a,b);
+  }
+  return tot/pts.length;
+}
+
+function netInit(sizes,R){
+  const L=[];
+  for(let i=0;i<sizes.length-1;i++){
+    const fi=sizes[i];
+    L.push({W:Array.from({length:sizes[i+1]},()=>Array.from({length:fi},()=>gauss(R)*Math.sqrt(2/fi))),
+            b:new Array(sizes[i+1]).fill(0)});
+  }
+  return L;
+}
+function netFwd(L,x,act){
+  const A=[x];
+  for(let i=0;i<L.length;i++){
+    const last=i===L.length-1, prev=A[i];
+    const z=L[i].W.map((w,r)=>{let s=L[i].b[r]; for(let c=0;c<w.length;c++) s+=w[c]*prev[c]; return s;});
+    A.push(z.map(v=>last?1/(1+Math.exp(-v)):(act==="relu"?Math.max(0,v):Math.tanh(v))));
+  }
+  return A;
+}
+function netEpoch(L,X,Y,lr,l2,act){
+  const n=X.length; let loss=0;
+  const gW=L.map(l=>l.W.map(w=>w.map(()=>0))), gb=L.map(l=>l.b.map(()=>0));
+  for(let s=0;s<n;s++){
+    const A=netFwd(L,X[s],act), out=A[A.length-1][0], e=1e-9;
+    loss+=-(Y[s]*Math.log(out+e)+(1-Y[s])*Math.log(1-out+e));
+    let d=[out-Y[s]];
+    for(let i=L.length-1;i>=0;i--){
+      for(let r=0;r<L[i].W.length;r++){
+        gb[i][r]+=d[r];
+        for(let c=0;c<L[i].W[r].length;c++) gW[i][r][c]+=d[r]*A[i][c];
+      }
+      if(i>0){
+        const nd=new Array(A[i].length).fill(0);
+        for(let c=0;c<A[i].length;c++){
+          let s2=0; for(let r=0;r<L[i].W.length;r++) s2+=d[r]*L[i].W[r][c];
+          const a=A[i][c];
+          nd[c]= act==="relu" ? (a>0?s2:0) : s2*(1-a*a);
+        }
+        d=nd;
+      }
+    }
+  }
+  L.forEach((l,i)=>{
+    for(let r=0;r<l.W.length;r++){
+      for(let c=0;c<l.W[r].length;c++) l.W[r][c]-=lr*(gW[i][r][c]/n + l2*l.W[r][c]);
+      l.b[r]-=lr*gb[i][r]/n;
+    }
+  });
+  return loss/n;
+}
+
+function stumpFit(res,depth,minLeaf){
+  function rec(pts,d){
+    const mean=pts.reduce((s,p)=>s+p.r,0)/Math.max(1,pts.length);
+    if(d>=depth||pts.length<2*(minLeaf||2)) return {leaf:true,v:mean};
+    let best=null;
+    for(let i=1;i<pts.length-1;i++){
+      const th=(pts[i].x+pts[i+1].x)/2;
+      const L=pts.filter(p=>p.x<th), Rt=pts.filter(p=>p.x>=th);
+      if(L.length<(minLeaf||2)||Rt.length<(minLeaf||2)) continue;
+      const m1=L.reduce((s,p)=>s+p.r,0)/L.length, m2=Rt.reduce((s,p)=>s+p.r,0)/Rt.length;
+      const sse=L.reduce((s,p)=>s+(p.r-m1)*(p.r-m1),0)+Rt.reduce((s,p)=>s+(p.r-m2)*(p.r-m2),0);
+      if(!best||sse<best.sse) best={sse,th,L,R:Rt};
+    }
+    if(!best) return {leaf:true,v:mean};
+    return {leaf:false,th:best.th,l:rec(best.L,d+1),r:rec(best.R,d+1)};
+  }
+  return rec(res.slice().sort((a,b)=>a.x-b.x),0);
+}
+function stumpEval(t,x){while(!t.leaf) t = x<t.th?t.l:t.r; return t.v;}
+
+/* ============ tuning engine ============ */
+const TUNE={};
+function installTuner(key,sp){
+  sp.key=key; TUNE[key]=sp; sp.last=null; sp.bestVal=undefined;
+  const b=document.querySelector('[data-tune="'+key+'"]');
+  const a=document.querySelector('[data-apply="'+key+'"]');
+  if(b) b.onclick=()=>runTune(key);
+  if(a) a.onclick=()=>{const s=TUNE[key];
+    if(s && s.bestVal!==undefined && s.apply){s.apply(s.bestVal); runTune(key);}};
+  if(sp.auto===false) placeholderTune(key); else runTune(key);
+}
+function retune(key){const s=TUNE[key]; if(s&&s.auto!==false) runTune(key);}
+function tuneOut(key,txt){
+  const el=document.getElementById("tn-"+key+"-out");
+  if(el) el.textContent=txt;
+}
+function placeholderTune(key){
+  const sp=TUNE[key]; if(!sp) return;
+  const S=stage("tn-"+key), g=S.g;
+  g.strokeStyle=C.rule; g.strokeRect(.5,.5,S.w-1,S.h-1);
+  label(g,sp.idle||"กดปุ่มด้านบนเพื่อเริ่มกวาดค่า (ใช้เวลาสักครู่)",S.w/2,S.h/2+4,C.dim,12,"center");
+  tuneOut(key,"ยังไม่ได้กวาดค่า");
+}
+function runTune(key){
+  const sp=TUNE[key]; if(!sp) return;
+  let res;
+  try{ res=sp.values.map(v=>sp.run(v)); }
+  catch(e){ console.error("tune "+key,e); return; }
+  const main = sp.mode==="bars" ? "v"
+    : sp.series[sp.pick!==undefined?sp.pick:sp.series.length-1].k;
+  let bi=0;
+  res.forEach((r,i)=>{
+    const cur=r[main], best=res[bi][main];
+    // เสมอกันแล้วเลือกตัวแรก = เลือกโมเดลที่เรียบง่ายกว่า ยกเว้นกราฟแท่งที่อยากชูตัวสุดท้าย
+    const win = sp.higher ? (sp.tieLast ? cur>=best : cur>best)
+                          : (sp.tieLast ? cur<=best : cur<best);
+    if(win) bi=i;
+  });
+  sp.last=res; sp.bestIdx=bi; sp.bestVal=sp.values[bi];
+  drawTune(key,res,bi);
+  tuneOut(key, sp.report ? sp.report(sp.values[bi],res[bi],res) :
+    "ค่าที่ดีที่สุด: "+sp.name+" = "+(sp.fmt?sp.fmt(sp.values[bi]):sp.values[bi]));
+}
+function drawTune(key,res,bi){
+  const sp=TUNE[key], S=stage("tn-"+key), g=S.g;
+  const pad={l:56,r:14,t:16,b:32};
+  const w=S.w-pad.l-pad.r, h=S.h-pad.t-pad.b;
+  const n=res.length;
+  if(sp.mode==="bars"){
+    g.strokeStyle=C.rule; g.strokeRect(pad.l+.5,pad.t+.5,w,h);
+    const mx=Math.max(...res.map(r=>r.v))*1.12||1;
+    const bw=w/n;
+    res.forEach((r,i)=>{
+      const bh=(r.v/mx)*(h-14);
+      const hi2 = !sp.noBest && i===bi;
+      g.fillStyle=hex2rgba(hi2?C.p3:(r.color||C.p1),hi2?.95:.78);
+      g.fillRect(pad.l+i*bw+bw*.18, pad.t+h-bh, bw*.64, bh);
+      label(g,sp.fmt?sp.fmt(r.v):fmtG(r.v),pad.l+i*bw+bw/2,pad.t+h-bh-5,C.ink,10,"center");
+      label(g,r.label,pad.l+i*bw+bw/2,pad.t+h+15,hi2?C.p3:C.dim,10,"center");
+    });
+    if(sp.ylab) label(g,sp.ylab,pad.l,pad.t-5,C.dim,10);
+    return;
+  }
+  let plot=res;
+  if(sp.norm){
+    plot=res.map(r=>Object.assign({},r));
+    sp.series.forEach(se=>{
+      const vs=res.map(r=>r[se.k]).filter(isFinite);
+      const a=Math.min.apply(null,vs), b=Math.max.apply(null,vs), sp2=(b-a)||1;
+      plot.forEach((r,i)=>{r[se.k]=(res[i][se.k]-a)/sp2;});
+    });
+  }
+  let lo=1e18,hi=-1e18;
+  sp.series.forEach(s=>plot.forEach(r=>{
+    if(isFinite(r[s.k])){lo=Math.min(lo,r[s.k]); hi=Math.max(hi,r[s.k]);}}));
+  if(!isFinite(lo)){lo=0;hi=1;}
+  if(hi-lo<1e-9){hi=lo+1;}
+  let allPos=true;
+  sp.series.forEach(se=>plot.forEach(r=>{if(r[se.k]<0) allPos=false;}));
+  const padv=(hi-lo)*.12; lo-=padv; hi+=padv;
+  if(allPos && lo<0) lo=0;
+  const X=i=>pad.l+(n===1?w/2:i/(n-1)*w);
+  const Y=v=>pad.t+h-(v-lo)/(hi-lo)*h;
+  g.save(); g.strokeStyle=C.hair; g.lineWidth=1;
+  for(let i=0;i<=4;i++){const yy=pad.t+i/4*h;
+    g.beginPath(); g.moveTo(pad.l,yy+.5); g.lineTo(pad.l+w,yy+.5); g.stroke();
+    const tv=hi-(hi-lo)*i/4;
+    const dp=Math.max(0,Math.min(4,Math.ceil(-Math.log10(Math.max(1e-12,(hi-lo)/4)))+1));
+    label(g,tv.toFixed(dp),pad.l-8,yy+4,C.dim,9.5,"end");}
+  g.restore();
+  g.strokeStyle=C.rule; g.strokeRect(pad.l+.5,pad.t+.5,w,h);
+  // best marker
+  g.save(); g.setLineDash([4,4]); g.strokeStyle=hex2rgba(C.p3,.85); g.lineWidth=1.4;
+  g.beginPath(); g.moveTo(X(bi),pad.t); g.lineTo(X(bi),pad.t+h); g.stroke(); g.restore();
+  sp.series.forEach(s=>{
+    g.save();
+    if(s.dash) g.setLineDash([5,4]);
+    g.strokeStyle=s.color; g.lineWidth=2; g.beginPath();
+    plot.forEach((r,i)=>{const yy=Y(r[s.k]); i?g.lineTo(X(i),yy):g.moveTo(X(i),yy);});
+    g.stroke(); g.restore();
+    plot.forEach((r,i)=>dot(g,X(i),Y(r[s.k]),2.6,s.color));
+  });
+  const br=plot[bi], mk=sp.series[sp.pick!==undefined?sp.pick:sp.series.length-1].k;
+  ring(g,X(bi),Y(br[mk]),5.5,C.p3);
+  // x labels
+  const step=Math.ceil(n/Math.max(3,Math.floor(w/56)));
+  res.forEach((r,i)=>{ if(i%step && i!==bi && i!==n-1) return;
+    label(g,sp.fmt?sp.fmt(sp.values[i]):String(sp.values[i]),X(i),pad.t+h+15,i===bi?C.p3:C.dim,9.5,"center");});
+  label(g,sp.xlab||sp.name,pad.l+w,pad.t+h+28,C.dim,9.5,"end");
+  if(sp.ylab) label(g,sp.ylab,pad.l,pad.t-5,C.dim,10);
+  // legend
+  let lxp=pad.l+w-6;
+  sp.series.slice().reverse().forEach(s=>{
+    const t=s.name, tw=t.length*5.6+16;
+    lxp-=tw;
+    g.save(); if(s.dash) g.setLineDash([5,4]);
+    g.strokeStyle=s.color; g.lineWidth=2;
+    g.beginPath(); g.moveTo(lxp,pad.t-6); g.lineTo(lxp+11,pad.t-6); g.stroke(); g.restore();
+    label(g,t,lxp+14,pad.t-2.5,C.dim,9.5);
+  });
+}
+
+/* ============ hyperparameter registry + control panel ============ */
+const PARAM={}, PSPEC={};
+let CUR=null;
+
+function decOf(step){
+  if(!step||step>=1) return 0;
+  const s=String(step);
+  return s.includes("e")? 6 : Math.min(4,(s.split(".")[1]||"").length);
+}
+function fmtParam(sp,v){
+  if(sp.type==="log") return fmtG(v);
+  if(sp.type==="int") return String(Math.round(v));
+  return v.toFixed(decOf(sp.step));
+}
+function clampParam(sp,v){
+  if(!isFinite(v)) return sp.def;
+  v=Math.min(sp.max,Math.max(sp.min,v));
+  if(sp.type==="int") v=Math.round(v);
+  else if(sp.type==="num"&&sp.step){
+    const d=decOf(sp.step);
+    v=parseFloat((Math.round(v/sp.step)*sp.step).toFixed(d));
+  }
+  return v;
+}
+/* slider position <-> value (log sliders keep a real continuous scale) */
+const LOGLO=1e-6, SLN=1000;
+function toPos(sp,v){
+  if(sp.type!=="log") return v;
+  if(v<=0) return 0;
+  const lo=Math.log10(sp.min>0?sp.min:LOGLO), hi=Math.log10(sp.max);
+  const t=(Math.log10(v)-lo)/(hi-lo);
+  return Math.round(Math.min(1,Math.max(0,t))*SLN);
+}
+function fromPos(sp,pos){
+  if(sp.type!=="log") return +pos;
+  if(sp.min<=0 && +pos===0) return 0;
+  const lo=Math.log10(sp.min>0?sp.min:LOGLO), hi=Math.log10(sp.max);
+  return Math.pow(10, lo+(hi-lo)*(+pos/SLN));
+}
+function stepParam(sp,v,dir){
+  if(sp.type==="log"){
+    if(v<=0) return sp.min>0?sp.min:LOGLO;
+    const nv=v*Math.pow(10,dir*0.5);
+    if(sp.min<=0 && nv<LOGLO*2 && dir<0) return 0;
+    return clampParam(sp,parseFloat(nv.toPrecision(2)));
+  }
+  return clampParam(sp,v+dir*(sp.step||1));
+}
+
+function pv(id){return PARAM[id]?PARAM[id].value:undefined;}
+function onParam(id,fn){if(PARAM[id]) PARAM[id].cbs.push({o:CUR,f:fn});}
+function clearOwner(k){for(const id in PARAM) PARAM[id].cbs=PARAM[id].cbs.filter(c=>c.o!==k);}
+function setParam(id,v,quiet){
+  const p=PARAM[id]; if(!p) return;
+  const sp=p.spec;
+  p.value = (sp.type==="choice"||sp.type==="bool") ? v : clampParam(sp,+v);
+  paintParam(id);
+  if(!quiet) p.cbs.forEach(c=>{try{c.f(p.value);}catch(e){console.error(id,e);}});
+}
+function paintParam(id){
+  const p=PARAM[id], sp=p.spec, ui=p.ui; if(!ui) return;
+  if(sp.type==="choice"){
+    ui.segs.forEach(b=>b.classList.toggle("on",b.dataset.v===String(p.value)));
+  } else if(sp.type==="bool"){
+    ui.toggle.classList.toggle("on",!!p.value);
+    ui.toggle.textContent = p.value?"เปิด":"ปิด";
+  } else {
+    ui.box.value=fmtParam(sp,p.value);
+    ui.slider.value=toPos(sp,p.value);
+  }
+}
+
+function buildPanels(){
+  for(const key in PSPEC){
+    const host=document.querySelector('[data-params="'+key+'"]');
+    if(!host) continue;
+    host.innerHTML="";
+    const head=document.createElement("div");
+    head.className="phead";
+    head.innerHTML='<h3>ปรับ hyperparameter</h3>';
+    const rst=document.createElement("button");
+    rst.className="ghost"; rst.textContent="คืนค่าเริ่มต้นทั้งหมด";
+    rst.onclick=()=>PSPEC[key].forEach(sp=>setParam(sp.id,sp.def));
+    head.appendChild(rst);
+    host.appendChild(head);
+
+    const grid=document.createElement("div");
+    grid.className="pgrid"; host.appendChild(grid);
+
+    PSPEC[key].forEach(sp=>{
+      PARAM[sp.id]={value:sp.def,spec:sp,cbs:[],ui:null};
+      const row=document.createElement("div"); row.className="prow";
+      const meta=document.createElement("div"); meta.className="pmeta";
+      meta.innerHTML='<code class="pname">'+sp.label+'</code>'+
+                     (sp.desc?'<span class="pdesc">'+sp.desc+'</span>':'');
+      row.appendChild(meta);
+      const ctl=document.createElement("div"); ctl.className="pctl";
+      const ui={};
+
+      if(sp.type==="choice"){
+        const seg=document.createElement("div"); seg.className="pseg"; ui.segs=[];
+        sp.opts.forEach(o=>{
+          const b=document.createElement("button");
+          b.type="button"; b.dataset.v=String(o.v); b.textContent=o.t;
+          b.onclick=()=>setParam(sp.id,o.v);
+          seg.appendChild(b); ui.segs.push(b);
+        });
+        ctl.appendChild(seg);
+      } else if(sp.type==="bool"){
+        const b=document.createElement("button");
+        b.type="button"; b.className="ptoggle";
+        b.onclick=()=>setParam(sp.id,!PARAM[sp.id].value);
+        ctl.appendChild(b); ui.toggle=b;
+      } else {
+        const minus=document.createElement("button");
+        minus.type="button"; minus.className="pstep"; minus.textContent="−";
+        minus.title="ลดค่า";
+        minus.onclick=()=>setParam(sp.id,stepParam(sp,PARAM[sp.id].value,-1));
+        const box=document.createElement("input");
+        box.type="text"; box.className="pin"; box.inputMode="decimal";
+        box.setAttribute("aria-label",sp.label);
+        const commit=()=>{
+          const raw=box.value.trim().replace(/,/g,"");
+          const v=parseFloat(raw);
+          if(isNaN(v)) paintParam(sp.id); else setParam(sp.id,v);
+        };
+        box.onchange=commit;
+        box.onkeydown=e=>{
+          if(e.key==="Enter"){commit(); box.blur();}
+          else if(e.key==="ArrowUp"){e.preventDefault(); setParam(sp.id,stepParam(sp,PARAM[sp.id].value,1));}
+          else if(e.key==="ArrowDown"){e.preventDefault(); setParam(sp.id,stepParam(sp,PARAM[sp.id].value,-1));}
+        };
+        const plus=document.createElement("button");
+        plus.type="button"; plus.className="pstep"; plus.textContent="+";
+        plus.title="เพิ่มค่า";
+        plus.onclick=()=>setParam(sp.id,stepParam(sp,PARAM[sp.id].value,1));
+        const sl=document.createElement("input");
+        sl.type="range"; sl.className="prange";
+        if(sp.type==="log"){sl.min=0; sl.max=SLN; sl.step=1;}
+        else {sl.min=sp.min; sl.max=sp.max; sl.step=sp.step||1;}
+        sl.oninput=()=>setParam(sp.id,fromPos(sp,sl.value));
+        const hint=document.createElement("span");
+        hint.className="phint";
+        hint.textContent=fmtParam(sp,sp.min)+" – "+fmtParam(sp,sp.max);
+        ctl.appendChild(minus); ctl.appendChild(box); ctl.appendChild(plus);
+        ctl.appendChild(sl); ctl.appendChild(hint);
+        ui.box=box; ui.slider=sl;
+      }
+      row.appendChild(ctl); grid.appendChild(row);
+      PARAM[sp.id].ui=ui; paintParam(sp.id);
+    });
+  }
+}
+
+/* ============ hyperparameter specs (14 plates) ============ */
+const CH=(...a)=>a.map(x=>({v:x[0],t:x[1]}));
+Object.assign(PSPEC,{
+linreg:[
+ {id:"linreg.deg",label:"degree",desc:"ดีกรีของพหุนามที่ใช้ฟิต · 1 = เส้นตรง",type:"int",min:1,max:9,step:1,def:1},
+ {id:"linreg.alpha",label:"alpha",desc:"ความแรงของ Ridge regularization · 0 = ไม่ลงโทษเลย",type:"log",min:0,max:10,def:0},
+ {id:"linreg.res",label:"show_residual",desc:"วาดเส้นระยะห่างจากค่าจริงถึงเส้นทำนาย",type:"bool",def:true}],
+logreg:[
+ {id:"logreg.deg",label:"poly_degree",desc:"ดีกรีของ polynomial features · สูงขึ้น = เส้นแบ่งโค้งได้มากขึ้น",type:"int",min:1,max:5,step:1,def:1},
+ {id:"logreg.C",label:"C",desc:"ส่วนกลับของ regularization · น้อย = บีบน้ำหนักแรง",type:"log",min:0.001,max:10000,def:1},
+ {id:"logreg.epochs",label:"max_iter",desc:"จำนวนรอบ gradient descent",type:"int",min:50,max:1500,step:50,def:450},
+ {id:"logreg.cls",label:"คลิกเพิ่มคลาส",desc:"เลือกว่าคลิกบนกราฟแล้วจะหย่อนจุดคลาสไหน",type:"choice",def:0,
+  opts:CH([0,"คลาส A"],[1,"คลาส B"])}],
+knn:[
+ {id:"knn.k",label:"n_neighbors",desc:"จำนวนเพื่อนบ้านที่เข้ามาโหวต",type:"int",min:1,max:35,step:1,def:5},
+ {id:"knn.w",label:"weights",desc:"โหวตเท่ากันหมด หรือให้คนใกล้กว่ามีสิทธิ์มากกว่า",type:"choice",def:"uniform",
+  opts:CH(["uniform","uniform"],["distance","distance"])},
+ {id:"knn.p",label:"metric",desc:"วิธีวัดระยะทางระหว่างจุด",type:"choice",def:2,
+  opts:CH([2,"Euclidean"],[1,"Manhattan"])}],
+tree:[
+ {id:"tree.depth",label:"max_depth",desc:"ความลึกสูงสุดของต้นไม้",type:"int",min:1,max:14,step:1,def:3},
+ {id:"tree.leaf",label:"min_samples_leaf",desc:"จำนวนตัวอย่างขั้นต่ำที่ใบหนึ่งต้องมี",type:"int",min:1,max:20,step:1,def:1},
+ {id:"tree.crit",label:"criterion",desc:"สูตรวัดความไม่บริสุทธิ์ที่ใช้เลือกจุดแบ่ง",type:"choice",def:"gini",
+  opts:CH(["gini","gini"],["entropy","entropy"])},
+ {id:"tree.data",label:"dataset",desc:"ชุดข้อมูลที่ใช้ทดลอง",type:"choice",def:"moons",
+  opts:CH(["moons","พระจันทร์"],["blobs","กระจุก"],["xor","XOR"])}],
+forest:[
+ {id:"rf.n",label:"n_estimators",desc:"จำนวนต้นไม้ในป่า",type:"int",min:1,max:60,step:1,def:12},
+ {id:"rf.depth",label:"max_depth",desc:"ความลึกสูงสุดของแต่ละต้น",type:"int",min:1,max:10,step:1,def:4},
+ {id:"rf.feat",label:"max_features",desc:"จำนวนฟีเจอร์ที่แต่ละ node ได้พิจารณา",type:"choice",def:1,
+  opts:CH([1,"1 จาก 2 (สุ่ม)"],[2,"ทั้งหมด"])}],
+svm:[
+ {id:"svm.kernel",label:"kernel",desc:"เส้นแบ่งตรง หรือยกไปมิติสูงด้วย RBF",type:"choice",def:"linear",
+  opts:CH(["linear","linear"],["rbf","RBF"])},
+ {id:"svm.C",label:"C",desc:"ยิ่งมาก = ยิ่งไม่ยอมให้จุดไหนผิด margin จะแคบลง",type:"log",min:0.01,max:300,def:1},
+ {id:"svm.gamma",label:"gamma",desc:"รัศมีอิทธิพลของ RBF kernel · ใช้เมื่อ kernel = RBF",type:"log",min:0.1,max:100,def:2},
+ {id:"svm.data",label:"dataset",desc:"ชุดข้อมูลที่ใช้ทดลอง",type:"choice",def:"mix",
+  opts:CH(["mix","ซ้อนทับกัน"],["sep","แยกกันชัด"],["circle","วงกลมซ้อน"])}],
+kmeans:[
+ {id:"km.k",label:"n_clusters",desc:"จำนวนกลุ่มที่บังคับให้แบ่ง",type:"int",min:2,max:8,step:1,def:3},
+ {id:"km.init",label:"init",desc:"วิธีเลือกจุดศูนย์กลางเริ่มต้น",type:"choice",def:"pp",
+  opts:CH(["pp","k-means++"],["rand","random"])},
+ {id:"km.ninit",label:"n_init",desc:"สุ่มเริ่มใหม่กี่ครั้งแล้วเก็บผลที่ inertia ต่ำสุด",type:"int",min:1,max:12,step:1,def:1}],
+mlp:[
+ {id:"mlp.h",label:"hidden_units",desc:"จำนวนนิวรอนต่อชั้นซ่อน",type:"int",min:2,max:24,step:1,def:8},
+ {id:"mlp.layers",label:"n_layers",desc:"จำนวนชั้นซ่อน",type:"int",min:1,max:3,step:1,def:2},
+ {id:"mlp.lr",label:"learning_rate",desc:"ขนาดก้าวของ gradient descent",type:"num",min:0.01,max:1,step:0.01,def:0.15},
+ {id:"mlp.l2",label:"alpha",desc:"L2 regularization ที่ดึงน้ำหนักให้เล็กลง",type:"log",min:0,max:0.1,def:0},
+ {id:"mlp.act",label:"activation",desc:"ฟังก์ชันกระตุ้นของชั้นซ่อน",type:"choice",def:"tanh",
+  opts:CH(["tanh","tanh"],["relu","ReLU"])}],
+cnn:[
+ {id:"cnn.kernel",label:"kernel",desc:"ลวดลายที่ตัวกรองนี้ไวต่อ",type:"choice",def:"sobelx",
+  opts:CH(["sobelx","Sobel X"],["sobely","Sobel Y"],["blur","Blur"],["sharp","Sharpen"],["emboss","Emboss"])},
+ {id:"cnn.size",label:"kernel_size",desc:"ขนาดหน้าต่างที่เลื่อนไปทั่วภาพ",type:"choice",def:3,
+  opts:CH([3,"3×3"],[5,"5×5"])},
+ {id:"cnn.stride",label:"stride",desc:"ก้าวละกี่พิกเซล · 2 = ย่อขนาดครึ่งหนึ่ง",type:"choice",def:1,
+  opts:CH([1,"1"],[2,"2"])},
+ {id:"cnn.pad",label:"padding",desc:"เติมขอบศูนย์เพื่อรักษาขนาดเดิมไว้หรือไม่",type:"choice",def:"valid",
+  opts:CH(["valid","valid"],["same","same"])},
+ {id:"cnn.pool",label:"pooling",desc:"วิธีย่อ feature map ลงครึ่งหนึ่ง",type:"choice",def:"max",
+  opts:CH(["max","max"],["avg","average"],["none","ไม่ใช้"])}],
+lstm:[
+ {id:"lstm.fb",label:"forget_bias",desc:"ค่า bias เริ่มต้นของประตูลืม · สูง = จำได้นาน",type:"num",min:-3,max:4,step:0.1,def:0},
+ {id:"lstm.ib",label:"input_bias",desc:"ค่า bias ของประตูรับเข้า",type:"num",min:-3,max:3,step:0.1,def:0},
+ {id:"lstm.wx",label:"input_weight",desc:"น้ำหนักที่คูณกับอินพุตก่อนเข้าประตู",type:"num",min:0,max:4,step:0.1,def:1.5},
+ {id:"lstm.speed",label:"speed",desc:"จำนวนเฟรมต่อหนึ่ง time step ตอนเล่นอัตโนมัติ",type:"int",min:2,max:40,step:1,def:12}],
+attn:[
+ {id:"attn.sent",label:"sentence",desc:"ประโยคที่ป้อนเข้าโมเดล",type:"choice",def:0,
+  opts:CH([0,"the cat sat …"],[1,"a model learns …"])},
+ {id:"attn.head",label:"head",desc:"หัว attention ที่กำลังดู · แต่ละหัวจับความสัมพันธ์คนละแบบ",type:"choice",def:0,
+  opts:CH([0,"head 1"],[1,"head 2"],[2,"head 3"])},
+ {id:"attn.dk",label:"d_k",desc:"มิติของเวกเตอร์ query/key",type:"choice",def:8,
+  opts:CH([4,"4"],[8,"8"],[16,"16"])},
+ {id:"attn.T",label:"temperature",desc:"หารคะแนนก่อน softmax · ต่ำ = สนใจเจาะจง สูง = เกลี่ยทั่วประโยค",type:"num",min:0.1,max:6,step:0.05,def:1}],
+rl:[
+ {id:"rl.eps",label:"epsilon",desc:"สัดส่วนที่เอเจนต์เลือกเดินสุ่มเพื่อสำรวจ",type:"num",min:0,max:1,step:0.01,def:0.25},
+ {id:"rl.alpha",label:"alpha",desc:"อัตราการเรียนรู้ · ยิ่งมากยิ่งเชื่อประสบการณ์ล่าสุด",type:"num",min:0.01,max:1,step:0.01,def:0.2},
+ {id:"rl.gamma",label:"gamma",desc:"ให้ค่ากับรางวัลในอนาคตแค่ไหน",type:"num",min:0.5,max:0.999,step:0.005,def:0.95},
+ {id:"rl.speed",label:"speed",desc:"จำนวน step ที่เดินต่อเฟรม",type:"int",min:1,max:60,step:1,def:12}],
+xgb:[
+ {id:"xgb.n",label:"n_estimators",desc:"จำนวนรอบ boosting ที่ใช้ทำนาย",type:"int",min:0,max:120,step:1,def:10},
+ {id:"xgb.lr",label:"learning_rate",desc:"η — น้ำหนักของต้นไม้แต่ละต้น",type:"num",min:0.01,max:1,step:0.01,def:0.2},
+ {id:"xgb.depth",label:"max_depth",desc:"ความลึกของต้นไม้แต่ละต้น",type:"int",min:1,max:5,step:1,def:2},
+ {id:"xgb.sub",label:"subsample",desc:"สัดส่วนตัวอย่างที่สุ่มมาใช้ในแต่ละรอบ",type:"num",min:0.2,max:1,step:0.05,def:1}],
+stack:[
+ {id:"stack.knn",label:"use kNN",desc:"เปิด/ปิด base model ตัวที่หนึ่ง",type:"bool",def:true},
+ {id:"stack.knnk",label:"kNN n_neighbors",desc:"ค่า k ของ base model ตัวที่หนึ่ง",type:"int",min:1,max:21,step:1,def:7},
+ {id:"stack.tree",label:"use Tree",desc:"เปิด/ปิด base model ตัวที่สอง",type:"bool",def:true},
+ {id:"stack.treed",label:"Tree max_depth",desc:"ความลึกของ base model ตัวที่สอง",type:"int",min:1,max:10,step:1,def:4},
+ {id:"stack.logreg",label:"use LogReg",desc:"เปิด/ปิด base model ตัวที่สาม",type:"bool",def:true},
+ {id:"stack.metaC",label:"meta C",desc:"regularization ของ meta-learner",type:"log",min:0.01,max:1000,def:100},
+ {id:"stack.cv",label:"cv folds",desc:"จำนวน fold ที่ใช้สร้าง out-of-fold predictions",type:"int",min:2,max:10,step:1,def:5},
+ {id:"stack.data",label:"dataset",desc:"ชุดข้อมูลที่ใช้ทดลอง",type:"choice",def:"moons",
+  opts:CH(["moons","พระจันทร์ซ้อน"],["xor","XOR"],["circle","วงกลมซ้อน"])}]
+});
 
 /* ============ 01 LINEAR REGRESSION ============ */
 const D={};
@@ -697,52 +1428,71 @@ D.linreg=function(){
   const S=stage("cv-linreg"), g=S.g;
   const pad={l:52,r:22,t:22,b:38};
   const gw=S.w-pad.l-pad.r, gh=S.h-pad.t-pad.b;
-  const st={pts:[],res:true};
   const px=x=>pad.l+x*gw, py=y=>pad.t+(1-y)*gh;
+  const st={pts:[],res:pv("linreg.res"),deg:pv("linreg.deg"),alpha:pv("linreg.alpha")};
   const R=rng(7);
-  function gen(){st.pts=[];
-    const a=.55+.5*R(), b=.15+.2*R();
-    for(let i=0;i<26;i++){const x=.04+.92*R();
-      st.pts.push({x,y:Math.min(.98,Math.max(.02,a*x+b+.09*gauss(R)))});}}
-  function fit(){
-    const n=st.pts.length; if(n<2) return null;
-    let sx=0,sy=0; st.pts.forEach(p=>{sx+=p.x;sy+=p.y;});
-    const mx=sx/n,my=sy/n; let num=0,den=0;
-    st.pts.forEach(p=>{num+=(p.x-mx)*(p.y-my); den+=(p.x-mx)**2;});
-    if(Math.abs(den)<1e-9) return null;
-    const w=num/den,b=my-w*mx;
-    let ss=0,tt=0; st.pts.forEach(p=>{const e=p.y-(w*p.x+b); ss+=e*e; tt+=(p.y-my)**2;});
-    return {w,b,mse:ss/n,r2:tt>1e-9?1-ss/tt:0};
+  function gen(){
+    st.pts=[];
+    const ph=R()*1.2, amp=.28+.08*R();
+    for(let i=0;i<36;i++){
+      const x=.03+.94*R();
+      st.pts.push({x, y:.48+amp*Math.sin(x*5.6-ph)-.10*x+.045*gauss(R), va:i%3===2});
+    }
   }
+  const tr=()=>st.pts.filter(p=>!p.va), va=()=>st.pts.filter(p=>p.va);
+  function polyFit(pts,deg,alpha){
+    const m=deg+1;
+    const A=Array.from({length:m},()=>new Array(m).fill(0)), b=new Array(m).fill(0);
+    pts.forEach(p=>{
+      const ph=[]; for(let d=0;d<m;d++) ph.push(Math.pow(p.x,d));
+      for(let i=0;i<m;i++){for(let j=0;j<m;j++) A[i][j]+=ph[i]*ph[j]; b[i]+=ph[i]*p.y;}
+    });
+    for(let i=1;i<m;i++) A[i][i]+=alpha*pts.length;
+    return solve(A,b);
+  }
+  const pEval=(w,x)=>{let s=0,p=1; for(const c of w){s+=c*p; p*=x;} return s;};
+  const mse=(w,pts)=>pts.length?pts.reduce((s,p)=>{const e=p.y-pEval(w,p.x); return s+e*e;},0)/pts.length:0;
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     grid(g,pad.l,pad.t,gw,gh,10);
-    label(g,"y",pad.l-34,pad.t+12); label(g,"x",pad.l+gw,pad.t+gh+26,C.dim,11,"end");
-    for(let i=0;i<=5;i++){label(g,(i/5).toFixed(1),pad.l-9,py(i/5)+4,C.dim,10,"end");
+    for(let i=0;i<=5;i++){
+      label(g,(i/5).toFixed(1),pad.l-9,py(i/5)+4,C.dim,10,"end");
       label(g,(i/5).toFixed(1),px(i/5),pad.t+gh+18,C.dim,10,"center");}
-    const m=fit();
-    if(m&&st.res){
-      g.strokeStyle=hex2rgba(C.p3,.65); g.lineWidth=1.4;
-      st.pts.forEach(p=>{g.beginPath(); g.moveTo(px(p.x),py(p.y));
-        g.lineTo(px(p.x),py(m.w*p.x+m.b)); g.stroke();});
+    const alpha=st.alpha;
+    const T=tr(); if(T.length<2){label(g,"ต้องมีจุดเทรนอย่างน้อย 2 จุด",S.w/2,S.h/2,C.dim,12,"center"); return;}
+    const w=polyFit(T,Math.min(st.deg,T.length-1),alpha);
+    if(st.res){
+      g.strokeStyle=hex2rgba(C.p3,.6); g.lineWidth=1.3;
+      T.forEach(p=>{g.beginPath(); g.moveTo(px(p.x),py(p.y));
+        g.lineTo(px(p.x),py(pEval(w,p.x))); g.stroke();});
     }
-    if(m){
-      g.strokeStyle=C.p1; g.lineWidth=2.6; g.beginPath();
-      g.moveTo(px(0),py(m.b)); g.lineTo(px(1),py(m.w+m.b)); g.stroke();
-    }
-    st.pts.forEach(p=>dot(g,px(p.x),py(p.y),4.4,"#fff",C.ink));
-    st.pts.forEach(p=>dot(g,px(p.x),py(p.y),2.2,C.ink));
-    const out=document.getElementById("linreg-out");
-    out.textContent = m ? `ŷ = ${m.w.toFixed(3)}·x + ${m.b.toFixed(3)}  ·  R² = ${m.r2.toFixed(3)}  ·  MSE = ${m.mse.toFixed(4)}  ·  n = ${st.pts.length}`
-                        : `ต้องมีอย่างน้อย 2 จุด (ตอนนี้ ${st.pts.length})`;
+    g.save(); g.beginPath(); g.rect(pad.l,pad.t,gw,gh); g.clip();
+    g.strokeStyle=C.p1; g.lineWidth=2.6; g.beginPath();
+    for(let i=0;i<=200;i++){const x=i/200, yy=py(pEval(w,x)); i?g.lineTo(px(x),yy):g.moveTo(px(x),yy);}
+    g.stroke(); g.restore();
+    T.forEach(p=>dot(g,px(p.x),py(p.y),4,C.ink));
+    va().forEach(p=>ring(g,px(p.x),py(p.y),4.4,C.p2));
+    label(g,"● จุดเทรน   ○ จุด validation",pad.l,pad.t-8,C.dim,10);
+    document.getElementById("linreg-out").textContent =
+      `degree ${st.deg} · α ${fmtG(alpha)} · MSE เทรน ${mse(w,T).toFixed(4)} · MSE val ${mse(w,va()).toFixed(4)}`;
   }
   S.c.onclick=e=>{const p=pointerPos(S.c,e);
     const x=(p.x-pad.l)/gw, y=1-(p.y-pad.t)/gh;
-    if(x>=0&&x<=1&&y>=0&&y<=1){st.pts.push({x,y}); draw();}};
-  document.querySelector('[data-act="linreg-noise"]').onclick=()=>{gen();draw();};
+    if(x>=0&&x<=1&&y>=0&&y<=1){st.pts.push({x,y,va:false}); draw(); retune("linreg");}};
+  document.querySelector('[data-act="linreg-noise"]').onclick=()=>{gen();draw();retune("linreg");};
   document.querySelector('[data-act="linreg-clear"]').onclick=()=>{st.pts=[];draw();};
-  document.getElementById("linreg-res").onchange=e=>{st.res=e.target.checked;draw();};
+  onParam("linreg.res",v=>{st.res=v; draw();});
+  onParam("linreg.deg",v=>{st.deg=v; draw();});
+  onParam("linreg.alpha",v=>{st.alpha=v; draw(); retune("linreg");});
   gen(); draw();
+  installTuner("linreg",{
+    name:"degree", xlab:"degree ของพหุนาม", ylab:"MSE (ยิ่งต่ำยิ่งดี)", higher:false, pick:1,
+    values:[1,2,3,4,5,6,7,8],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(d){const w=polyFit(tr(),d,st.alpha); return {train:mse(w,tr()),val:mse(w,va())};},
+    apply(v){setParam("linreg.deg",v);},
+    report(v,r){return `degree ที่ดีที่สุด = ${v} · MSE val ${r.val.toFixed(4)} (เทรน ${r.train.toFixed(4)})`;}
+  });
 };
 
 /* ============ 02 LOGISTIC REGRESSION ============ */
@@ -750,43 +1500,46 @@ D.logreg=function(){
   const S=stage("cv-logreg"), g=S.g;
   const pad=24, gw=S.w-pad*2, gh=S.h-pad*2;
   const px=x=>pad+x*gw, py=y=>pad+(1-y)*gh;
-  const R=rng(21);
-  let pts=[], m={w1:0,w2:0,b:0}, lr=.25;
-  function gen(){pts=makeBlobs(30,[[.32,.62],[.7,.34]],R,.11);}
-  function train(){m=trainLogreg(pts,900,lr*4);}
+  const CGRID=[.001,.01,.1,1,10,100,1000,10000];
+  let R=rng(21), pts=[], m=null,
+      deg=pv("logreg.deg"), Creg=pv("logreg.C"), iters=pv("logreg.epochs");
+  function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeMoons(24,.05,R); fit();}
+  const sp=()=>splitData(pts,.65,7);
+  function fit(){m=fitLogit(pts,deg,Creg,iters);}
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const s=6;
     for(let i=pad;i<pad+gw;i+=s)for(let j=pad;j<pad+gh;j+=s){
-      const x=(i-pad)/gw, y=1-(j-pad)/gh;
-      const p=1/(1+Math.exp(-(m.w1*x+m.w2*y+m.b)));
-      g.fillStyle = p>.5 ? hex2rgba(C.p2,(p-.5)*.55) : hex2rgba(C.p1,(.5-p)*.55);
+      const p=predLogit(m,(i-pad)/gw,1-(j-pad)/gh);
+      g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.6):hex2rgba(C.p1,(.5-p)*.6);
       g.fillRect(i,j,s,s);
     }
     grid(g,pad,pad,gw,gh,10);
-    if(Math.abs(m.w2)>1e-6){
-      g.strokeStyle=C.ink; g.lineWidth=2.4; g.beginPath();
-      const y0=-(m.w1*0+m.b)/m.w2, y1=-(m.w1*1+m.b)/m.w2;
-      g.moveTo(px(0),py(y0)); g.lineTo(px(1),py(y1)); g.stroke();
-    }
     let ok=0;
-    pts.forEach(p=>{
-      const pr=1/(1+Math.exp(-(m.w1*p.x+m.w2*p.y+m.b)));
-      if((pr>.5?1:0)===p.l) ok++;
-      dot(g,px(p.x),py(p.y),5,CLS[p.l],"#fff");
-    });
+    pts.forEach(p=>{if((predLogit(m,p.x,p.y)>.5?1:0)===p.l)ok++;
+      dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff");});
     document.getElementById("logreg-out").textContent =
-      `w = [${m.w1.toFixed(2)}, ${m.w2.toFixed(2)}]  b = ${m.b.toFixed(2)}  ·  ความแม่น ${(100*ok/Math.max(1,pts.length)).toFixed(1)}%`;
+      `degree ${deg} · C ${fmtG(Creg)} · max_iter ${iters} · ฟีเจอร์ ${polyFeat(0,0,deg).length} ตัว · ความแม่นบนชุดเทรน ${(100*ok/pts.length).toFixed(1)}%`;
   }
   S.c.onclick=e=>{const p=pointerPos(S.c,e);
     const x=(p.x-pad)/gw, y=1-(p.y-pad)/gh;
     if(x>=0&&x<=1&&y>=0&&y<=1){
-      pts.push({x,y,l:+document.getElementById("logreg-cls").value}); train(); draw();}};
-  document.querySelector('[data-act="logreg-train"]').onclick=()=>{gen();train();draw();};
-  document.getElementById("logreg-lr").oninput=e=>{
-    lr=e.target.value/100; document.getElementById("logreg-lrv").textContent=lr.toFixed(2);
-    train(); draw();};
-  gen(); train(); draw();
+      pts.push({x,y,l:+pv("logreg.cls")}); fit(); draw(); retune("logreg");}};
+  document.querySelector('[data-act="logreg-train"]').onclick=()=>{gen();draw();retune("logreg");};
+  onParam("logreg.deg",v=>{deg=v; fit(); draw(); retune("logreg");});
+  onParam("logreg.C",v=>{Creg=v; fit(); draw();});
+  onParam("logreg.epochs",v=>{iters=v; fit(); draw(); retune("logreg");});
+  gen(); draw();
+  installTuner("logreg",{
+    name:"C", xlab:"C (ยิ่งมาก = regularization ยิ่งน้อย)", ylab:"ความแม่น", higher:true, pick:1,
+    values:CGRID, fmt:v=>fmtG(v),
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(c){const d=sp(); const mm=fitLogit(d.tr,deg,c,iters);
+      const acc=set=>set.reduce((s,p)=>s+(((predLogit(mm,p.x,p.y)>.5?1:0)===p.l)?1:0),0)/Math.max(1,set.length);
+      return {train:acc(d.tr),val:acc(d.va)};},
+    apply(v){setParam("logreg.C",v);},
+    report(v,r){return `C ที่ดีที่สุด = ${fmtG(v)} · val ${(r.val*100).toFixed(1)}% (เทรน ${(r.train*100).toFixed(1)}%)`;}
+  });
 };
 
 /* ============ 03 kNN ============ */
@@ -794,18 +1547,14 @@ D.knn=function(){
   const S=stage("cv-knn"), g=S.g;
   const pad=24, gw=S.w-pad*2, gh=S.h-pad*2;
   const px=x=>pad+x*gw, py=y=>pad+(1-y)*gh;
-  let R=rng(33), pts=[], k=5, q=null, field=null;
-  function gen(){pts=makeBlobs(22,[[.28,.7],[.72,.66],[.5,.25]],R,.11); field=null;}
-  function nearest(x,y,kk){
-    return pts.map(p=>({p,d:(p.x-x)**2+(p.y-y)**2}))
-              .sort((a,b)=>a.d-b.d).slice(0,kk);
-  }
-  function vote(nb){const c=[0,0,0]; nb.forEach(n=>c[n.p.l]++); return c;}
+  let R=rng(33), pts=[], k=pv("knn.k"), wt=pv("knn.w"), pm=pv("knn.p"), q=null, field=null;
+  function gen(){pts=makeBlobs(26,[[.27,.71],[.72,.66],[.5,.27]],R,.125); field=null;}
+  const sp=()=>splitData(pts,.65,11);
   function buildField(){
     const s=7; field=[];
     for(let i=0;i<gw;i+=s)for(let j=0;j<gh;j+=s){
-      const c=vote(nearest(i/gw,1-j/gh,k));
-      field.push({i,j,s,l:c.indexOf(Math.max(...c))});
+      const v=knnVote(pts,i/gw,1-j/gh,k,3,wt,pm);
+      field.push({i,j,s,l:v.indexOf(Math.max(...v))});
     }
   }
   function draw(){
@@ -814,32 +1563,43 @@ D.knn=function(){
     field.forEach(f=>{g.fillStyle=hex2rgba(CLS[f.l],.17); g.fillRect(pad+f.i,pad+f.j,f.s,f.s);});
     grid(g,pad,pad,gw,gh,10);
     if(q){
-      const nb=nearest(q.x,q.y,k), c=vote(nb);
-      const far=Math.sqrt(nb[nb.length-1].d);
+      const nb=knnNeighbors(pts,q.x,q.y,k,pm);
+      const v=knnVote(pts,q.x,q.y,k,3,wt,pm);
       g.strokeStyle=hex2rgba(C.ink,.35); g.setLineDash([4,4]); g.lineWidth=1.2;
-      g.beginPath(); g.arc(px(q.x),py(q.y),far*gw,0,6.2832); g.stroke(); g.setLineDash([]);
-      nb.forEach(n=>{g.strokeStyle=hex2rgba(CLS[n.p.l],.85); g.lineWidth=1.6;
-        g.beginPath(); g.moveTo(px(q.x),py(q.y)); g.lineTo(px(n.p.x),py(n.p.y)); g.stroke();});
-      const win=c.indexOf(Math.max(...c));
+      g.beginPath(); g.arc(px(q.x),py(q.y),nb[nb.length-1].d*gw,0,6.2832); g.stroke(); g.setLineDash([]);
+      nb.forEach(nn=>{g.strokeStyle=hex2rgba(CLS[nn.t.l],.85); g.lineWidth=1.6;
+        g.beginPath(); g.moveTo(px(q.x),py(q.y)); g.lineTo(px(nn.t.x),py(nn.t.y)); g.stroke();});
+      const win=v.indexOf(Math.max(...v));
       document.getElementById("knn-out").textContent =
-        `โหวต A:${c[0]} B:${c[1]} C:${c[2]} → คลาส ${["A","B","C"][win]}`;
-    } else document.getElementById("knn-out").textContent="เลื่อนเมาส์เข้ามาในกราฟ";
+        `คะแนนโหวต A ${v[0].toFixed(2)} · B ${v[1].toFixed(2)} · C ${v[2].toFixed(2)} → คลาส ${["A","B","C"][win]}`;
+    } else document.getElementById("knn-out").textContent =
+      `k=${k} · น้ำหนัก ${wt==="uniform"?"เท่ากันหมด":"ตามระยะทาง"} · ระยะแบบ ${pm===1?"Manhattan":"Euclidean"}`;
     pts.forEach(p=>dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff"));
-    if(q){
-      g.strokeStyle=C.ink; g.lineWidth=2.4;
+    if(q){g.strokeStyle=C.ink; g.lineWidth=2.4;
       g.beginPath(); g.moveTo(px(q.x)-8,py(q.y)); g.lineTo(px(q.x)+8,py(q.y));
-      g.moveTo(px(q.x),py(q.y)-8); g.lineTo(px(q.x),py(q.y)+8); g.stroke();
-    }
+      g.moveTo(px(q.x),py(q.y)-8); g.lineTo(px(q.x),py(q.y)+8); g.stroke();}
   }
   const move=e=>{const p=pointerPos(S.c,e);
     const x=(p.x-pad)/gw, y=1-(p.y-pad)/gh;
     q=(x>=0&&x<=1&&y>=0&&y<=1)?{x,y}:null; draw();};
   S.c.onmousemove=move; S.c.ontouchmove=e=>{e.preventDefault(); move(e);};
   S.c.onmouseleave=()=>{q=null;draw();};
-  document.getElementById("knn-k").oninput=e=>{k=+e.target.value;
-    document.getElementById("knn-kv").textContent=k; field=null; draw();};
-  document.querySelector('[data-act="knn-new"]').onclick=()=>{gen();draw();};
+  onParam("knn.k",v=>{k=v; field=null; draw();});
+  onParam("knn.w",v=>{wt=v; field=null; draw(); retune("knn");});
+  onParam("knn.p",v=>{pm=v; field=null; draw(); retune("knn");});
+  document.querySelector('[data-act="knn-new"]').onclick=()=>{gen();draw();retune("knn");};
   gen(); draw();
+  installTuner("knn",{
+    name:"k", xlab:"k (จำนวนเพื่อนบ้าน)", ylab:"ความแม่น", higher:true, pick:1,
+    values:[1,3,5,7,9,11,13,15,17,19,21,25,31],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(kk){const d=sp();
+      const acc=set=>set.reduce((s,p)=>{const v=knnVote(d.tr,p.x,p.y,kk,3,wt,pm);
+        return s+((v.indexOf(Math.max(...v))===p.l)?1:0);},0)/Math.max(1,set.length);
+      return {train:acc(d.tr),val:acc(d.va)};},
+    apply(v){setParam("knn.k",v);},
+    report(v,r){return `k ที่ดีที่สุด = ${v} · val ${(r.val*100).toFixed(1)}% (เทรน ${(r.train*100).toFixed(1)}%)`;}
+  });
 };
 
 /* ============ 04 DECISION TREE ============ */
@@ -848,47 +1608,45 @@ D.tree=function(){
   const gap=16, bw=Math.min(S.h-40,(S.w-gap)*.52), left=20;
   const gw=bw, gh=bw, tx=left+gw+gap*2, tw=S.w-tx-16;
   const px=x=>left+x*gw, py=y=>20+(1-y)*gh;
-  let R=rng(5), pts=[], t=null, depth=3, kind="moons";
+  let R=rng(5), pts=[], t=null, depth=pv("tree.depth"), minLeaf=pv("tree.leaf"),
+      crit=pv("tree.crit"), kind=pv("tree.data");
+  const opt=(d,ml)=>({maxDepth:d,minLeaf:ml,crit,nc:2,featSub:false,R});
+  const sp=()=>splitData(pts,.65,23);
   function gen(){
     R=rng(Math.floor(Math.random()*1e6)+1);
-    pts = kind==="moons"?makeMoons(38,.030,R) : kind==="xor"?makeXor(140,R) : makeBlobs(45,[[.3,.7],[.7,.3]],R,.12);
+    pts = kind==="moons"?makeMoons(38,.030,R) : kind==="xor"?makeXor(150,R) : makeBlobs(45,[[.3,.7],[.7,.3]],R,.12);
     build();
   }
-  function build(){t=buildTree(pts,0,depth,2,false,R);}
+  function build(){t=buildTree(pts,opt(depth,minLeaf));}
   const maxDraw=()=>tw>320?4:3;
   function drawNode(node,x,y,w,lvl){
     const cellH=Math.min(38,(S.h-60)/Math.max(2,Math.min(depth,maxDraw())+1));
     if(!node.leaf && lvl>=maxDraw()){
       g.fillStyle="#fff"; g.strokeStyle=hex2rgba(C.dim,.8); g.lineWidth=1;
       g.fillRect(x-11,y-8,22,16); g.strokeRect(x-11.5,y-8.5,23,17);
-      label(g,"…",x,y+5,C.dim,12,"center");
-      return;
+      label(g,"…",x,y+5,C.dim,12,"center"); return;
     }
     if(node.leaf){
-      const cls=node.cls;
-      g.fillStyle=hex2rgba(CLS[cls],.85); g.fillRect(x-13,y-9,26,18);
+      g.fillStyle=hex2rgba(CLS[node.cls],.85); g.fillRect(x-13,y-9,26,18);
       g.strokeStyle=C.ink; g.lineWidth=1; g.strokeRect(x-13.5,y-9.5,27,19);
-      label(g,["A","B"][cls],x,y+4,"#fff",11,"center");
-      return;
+      label(g,["A","B"][node.cls],x,y+4,"#fff",11,"center"); return;
     }
     g.fillStyle="#fff"; g.strokeStyle=C.ink; g.lineWidth=1.2;
     g.fillRect(x-30,y-10,60,20); g.strokeRect(x-30.5,y-10.5,61,21);
     label(g,`${node.d}<${node.th.toFixed(2)}`,x,y+4,C.ink,9.5,"center");
     const ny=y+cellH, q=w/2;
     g.strokeStyle=hex2rgba(C.dim,.7); g.lineWidth=1;
-    [[-1,node.left],[1,node.right]].forEach(([s,ch])=>{
-      const nx=x+s*q/2;
+    [[-1,node.left],[1,node.right]].forEach(a=>{
+      const nx=x+a[0]*q/2;
       g.beginPath(); g.moveTo(x,y+10); g.lineTo(nx,ny-10); g.stroke();
-      drawNode(ch,nx,ny,q,lvl+1);
-    });
+      drawNode(a[1],nx,ny,q,lvl+1);});
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const s=5;
     for(let i=0;i<gw;i+=s)for(let j=0;j<gh;j+=s){
-      const c=treePredict(t,i/gw,1-j/gh);
-      g.fillStyle=hex2rgba(CLS[c],.2); g.fillRect(left+i,20+j,s,s);
-    }
+      g.fillStyle=hex2rgba(CLS[treePredict(t,i/gw,1-j/gh)],.2);
+      g.fillRect(left+i,20+j,s,s);}
     grid(g,left,20,gw,gh,10);
     let ok=0;
     pts.forEach(p=>{if(treePredict(t,p.x,p.y)===p.l)ok++;
@@ -897,13 +1655,24 @@ D.tree=function(){
     label(g,treeDepth(t)-1>maxDraw()?"TREE (แสดง "+maxDraw()+" ชั้นแรก)":"TREE STRUCTURE",tx,S.h-8,C.dim,10);
     drawNode(t,tx+tw/2,32,tw*.92,0);
     document.getElementById("tree-out").textContent =
-      `ลึกจริง ${treeDepth(t)-1} · ใบ ${treeLeaves(t)} · ความแม่นบนชุดเทรน ${(100*ok/pts.length).toFixed(1)}%`;
+      `ลึกจริง ${treeDepth(t)-1} · ใบ ${treeLeaves(t)} · ${crit} · min_samples_leaf ${minLeaf} · ความแม่นเทรน ${(100*ok/pts.length).toFixed(1)}%`;
   }
-  document.getElementById("tree-d").oninput=e=>{depth=+e.target.value;
-    document.getElementById("tree-dv").textContent=depth; build(); draw();};
-  document.getElementById("tree-data").onchange=e=>{kind=e.target.value; gen(); draw();};
-  document.querySelector('[data-act="tree-new"]').onclick=()=>{gen();draw();};
+  onParam("tree.depth",v=>{depth=v; build(); draw();});
+  onParam("tree.leaf",v=>{minLeaf=v; build(); draw(); retune("tree");});
+  onParam("tree.crit",v=>{crit=v; build(); draw(); retune("tree");});
+  onParam("tree.data",v=>{kind=v; gen(); draw(); retune("tree");});
+  document.querySelector('[data-act="tree-new"]').onclick=()=>{gen();draw();retune("tree");};
   gen(); draw();
+  installTuner("tree",{
+    name:"max_depth", xlab:"max_depth", ylab:"ความแม่น", higher:true, pick:1,
+    values:[1,2,3,4,5,6,7,8,9,10,12],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(d){const s=sp(), tt=buildTree(s.tr,opt(d,minLeaf));
+      const acc=set=>set.reduce((a,p)=>a+((treePredict(tt,p.x,p.y)===p.l)?1:0),0)/Math.max(1,set.length);
+      return {train:acc(s.tr),val:acc(s.va)};},
+    apply(v){setParam("tree.depth",v);},
+    report(v,r){return `max_depth ที่ดีที่สุด = ${v} · val ${(r.val*100).toFixed(1)}% (เทรน ${(r.train*100).toFixed(1)}%) — ช่องว่างที่ถ่างออกทางขวาคือ overfitting`;}
+  });
 };
 
 /* ============ 05 RANDOM FOREST ============ */
@@ -911,37 +1680,48 @@ D.forest=function(){
   const S=stage("cv-forest"), g=S.g;
   const pad=22, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
   const px=x=>left+x*side, py=y=>pad+(1-y)*side;
-  let R=rng(11), pts=[], trees=[], nT=12, dep=4;
+  let R=rng(11), pts=[], trees=[], nT=pv("rf.n"), dep=pv("rf.depth"), sub=pv("rf.feat")===1;
+  const sp=()=>splitData(pts,.65,29);
   function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeMoons(40,.035,R); build();}
-  function build(){
-    trees=[];
-    for(let i=0;i<nT;i++){
-      const bag=[]; for(let k=0;k<pts.length;k++) bag.push(pts[Math.floor(R()*pts.length)]);
-      trees.push(buildTree(bag,0,dep,2,true,R));
+  function grow(data,n,d){
+    const out=[];
+    for(let i=0;i<n;i++){
+      const bag=[]; for(let k=0;k<data.length;k++) bag.push(data[Math.floor(R()*data.length)]);
+      out.push(buildTree(bag,{maxDepth:d,minLeaf:1,crit:"gini",nc:2,featSub:sub,R}));
     }
+    return out;
   }
-  function vote(x,y){let s=0; trees.forEach(t=>{s+=treeProbs(t,x,y)[1];}); return s/trees.length;}
+  function build(){trees=grow(pts,nT,dep);}
+  function voteOf(list,x,y){let s=0; list.forEach(t=>{s+=treeProbs(t,x,y)[1];}); return s/list.length;}
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const s=5;
     for(let i=0;i<side;i+=s)for(let j=0;j<side;j+=s){
-      const p=vote(i/side,1-j/side);
+      const p=voteOf(trees,i/side,1-j/side);
       g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.65):hex2rgba(C.p1,(.5-p)*.65);
-      g.fillRect(left+i,pad+j,s,s);
-    }
+      g.fillRect(left+i,pad+j,s,s);}
     grid(g,left,pad,side,side,10);
     let ok=0;
-    pts.forEach(p=>{if((vote(p.x,p.y)>.5?1:0)===p.l)ok++;
+    pts.forEach(p=>{if((voteOf(trees,p.x,p.y)>.5?1:0)===p.l)ok++;
       dot(g,px(p.x),py(p.y),4.2,CLS[p.l],"#fff");});
     document.getElementById("rf-out").textContent =
-      `${nT} ต้น · ลึก ${dep} · ความแม่น ${(100*ok/pts.length).toFixed(1)}%`;
+      `${nT} ต้น · ลึก ${dep} · max_features ${sub?"1 จาก 2":"ทั้งหมด"} · ความแม่นเทรน ${(100*ok/pts.length).toFixed(1)}%`;
   }
-  document.getElementById("rf-n").oninput=e=>{nT=+e.target.value;
-    document.getElementById("rf-nv").textContent=nT; build(); draw();};
-  document.getElementById("rf-d").oninput=e=>{dep=+e.target.value;
-    document.getElementById("rf-dv").textContent=dep; build(); draw();};
-  document.querySelector('[data-act="rf-new"]').onclick=()=>{gen();draw();};
+  onParam("rf.n",v=>{nT=v; build(); draw();});
+  onParam("rf.depth",v=>{dep=v; build(); draw(); retune("forest");});
+  onParam("rf.feat",v=>{sub=v===1; build(); draw(); retune("forest");});
+  document.querySelector('[data-act="rf-new"]').onclick=()=>{gen();draw();retune("forest");};
   gen(); draw();
+  installTuner("forest",{
+    name:"n_estimators", xlab:"จำนวนต้นไม้", ylab:"ความแม่น", higher:true, pick:1,
+    values:[1,2,4,8,16,32,64],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(n){const s=sp(), F=grow(s.tr,n,dep);
+      const acc=set=>set.reduce((a,p)=>a+(((voteOf(F,p.x,p.y)>.5?1:0)===p.l)?1:0),0)/Math.max(1,set.length);
+      return {train:acc(s.tr),val:acc(s.va)};},
+    apply(v){setParam("rf.n",v);},
+    report(v,r){return `เส้น validation ราบตั้งแต่ราว ${v} ต้น (val ${(r.val*100).toFixed(1)}%) — เพิ่มต้นไม้ต่อไปแทบไม่ช่วย แค่ช้าลง`;}
+  });
 };
 
 /* ============ 06 SVM ============ */
@@ -949,64 +1729,85 @@ D.svm=function(){
   const S=stage("cv-svm"), g=S.g;
   const pad=24, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
   const px=x=>left+x*side, py=y=>pad+(1-y)*side;
-  let R=rng(3), pts=[], w=[0,0], b=0, Cc=1, kind="sep";
+  const CGRID=[.03,.1,.3,1,3,10,30,100];
+  let R=rng(3), pts=[], model=null,
+      Cc=pv("svm.C"), gam=pv("svm.gamma"), kern=pv("svm.kernel"), kind=pv("svm.data");
+  const sp=()=>splitData(pts,.65,31);
   function gen(){
     R=rng(Math.floor(Math.random()*1e6)+1);
-    const sp = kind==="sep"?.075:.135;
-    pts=makeBlobs(26,[[.3,.68],[.7,.34]],R,sp).map(p=>({x:p.x,y:p.y,l:p.l,s:p.l?1:-1}));
-    train();
+    const raw = kind==="circle" ? makeCircles(22,R)
+              : makeBlobs(26,[[.3,.68],[.7,.34]],R,kind==="sep"?.075:.135);
+    pts=raw.map(p=>({x:p.x,y:p.y,l:p.l,s:p.l?1:-1}));
+    fit();
   }
-  // Pegasos: หน่วยของฟีเจอร์ถูกเลื่อนไปช่วง [-1,1] ก่อนเทรน
-  const u=v=>(v-.5)*2;
-  function train(){
-    w=[0,0]; b=0;
-    const n=pts.length, lam=1/(Cc*n), T=20000;
-    for(let t=1;t<=T;t++){
-      const eta=1/(lam*t), p=pts[Math.floor(R()*n)];
-      const m=p.s*(w[0]*u(p.x)+w[1]*u(p.y)+b), d=1-eta*lam;
-      w[0]*=d; w[1]*=d;
-      if(m<1){ w[0]+=eta*p.s*u(p.x); w[1]+=eta*p.s*u(p.y); b+=eta*p.s*.35; }
-    }
-  }
-  function f(x,y){return w[0]*u(x)+w[1]*u(y)+b;}
+  function fit(){model=fitSVM(pts,{C:Cc,gamma:gam,kernel:kern,T:5000,seed:9});}
   function drawLine(off,style){
+    const w=[0,0];
+    if(kern!=="linear") return;
+    // recover a linear weight vector from the kernel expansion
+    model.nz.forEach(j=>{const p=model.pts[j];
+      w[0]+=model.a[j]*p.s*(2*p.x-1)*model.scale; w[1]+=model.a[j]*p.s*(2*p.y-1)*model.scale;});
+    let b=0; model.nz.forEach(j=>{b+=model.a[j]*model.pts[j].s*model.scale;});
     if(Math.abs(w[1])<1e-6) return;
-    const yAt=x=>(((off-b-w[0]*u(x))/w[1])+1)/2;
-    const y0=yAt(0), y1=yAt(1);
+    const yAt=x=>(((off-b-w[0]*(2*x-1))/w[1])+1)/2;
     g.save(); g.setLineDash(style==="dash"?[6,5]:[]);
     g.strokeStyle=style==="dash"?hex2rgba(C.ink,.45):C.ink;
     g.lineWidth=style==="dash"?1.3:2.4;
-    g.beginPath(); g.moveTo(px(0),py(y0)); g.lineTo(px(1),py(y1)); g.stroke(); g.restore();
+    g.beginPath(); g.moveTo(px(0),py(yAt(0))); g.lineTo(px(1),py(yAt(1))); g.stroke(); g.restore();
+  }
+  function drawContour(){
+    // draw the f=0 / f=±1 contours for any kernel by marching the grid
+    const n=110, val=[];
+    for(let i=0;i<=n;i++){val.push([]);
+      for(let j=0;j<=n;j++) val[i].push(model.f(i/n,1-j/n));}
+    [[0,C.ink,2.4,[]],[1,hex2rgba(C.ink,.45),1.3,[6,5]],[-1,hex2rgba(C.ink,.45),1.3,[6,5]]].forEach(cf=>{
+      g.save(); g.setLineDash(cf[3]); g.strokeStyle=cf[1]; g.lineWidth=cf[2]; g.beginPath();
+      for(let i=0;i<n;i++)for(let j=0;j<n;j++){
+        const a=val[i][j]-cf[0], b=val[i+1][j]-cf[0], c=val[i][j+1]-cf[0];
+        const X=left+i/n*side, Y=pad+j/n*side, st=side/n;
+        if(a*b<0){g.moveTo(X+st*(Math.abs(a)/(Math.abs(a)+Math.abs(b))),Y);
+                  g.lineTo(X+st*(Math.abs(a)/(Math.abs(a)+Math.abs(b))),Y+st*.9);}
+        if(a*c<0){g.moveTo(X,Y+st*(Math.abs(a)/(Math.abs(a)+Math.abs(c))));
+                  g.lineTo(X+st*.9,Y+st*(Math.abs(a)/(Math.abs(a)+Math.abs(c))));}
+      }
+      g.stroke(); g.restore();
+    });
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const s=6;
     for(let i=0;i<side;i+=s)for(let j=0;j<side;j+=s){
-      const v=f(i/side,1-j/side);
+      const v=model.f(i/side,1-j/side);
       const a=Math.min(.45,Math.abs(v)*.16);
       g.fillStyle = v>0?hex2rgba(C.p2,a):hex2rgba(C.p1,a);
-      g.fillRect(left+i,pad+j,s,s);
-    }
+      g.fillRect(left+i,pad+j,s,s);}
     grid(g,left,pad,side,side,10);
-    drawLine(0); drawLine(1,"dash"); drawLine(-1,"dash");
-    let sv=0, ok=0;
-    pts.forEach(p=>{
-      const m=p.s*f(p.x,p.y);
-      if(m>0) ok++;
-      if(m<1.0){sv++;
-        g.beginPath(); g.arc(px(p.x),py(p.y),9,0,6.2832);
+    if(kern==="linear"){drawLine(0); drawLine(1,"dash"); drawLine(-1,"dash");} else drawContour();
+    let ok=0;
+    pts.forEach((p,i)=>{
+      if(p.s*model.f(p.x,p.y)>0) ok++;
+      if(model.a[i]>0){g.beginPath(); g.arc(px(p.x),py(p.y),9,0,6.2832);
         g.strokeStyle=C.p4; g.lineWidth=2; g.stroke();}
-      dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff");
-    });
-    const marg = 1/Math.max(1e-6,Math.hypot(w[0],w[1]));
+      dot(g,px(p.x),py(p.y),4.6,CLS[p.l],"#fff");});
     document.getElementById("svm-out").textContent =
-      `ความกว้าง margin ≈ ${marg.toFixed(3)} · support vector ${sv}/${pts.length} จุด · ความแม่น ${(100*ok/pts.length).toFixed(1)}%`;
+      `kernel ${kern} · C ${fmtG(Cc)}${kern==="rbf"?" · gamma "+fmtG(gam):""} · support vector ${model.nz.length}/${pts.length} · ความแม่นเทรน ${(100*ok/pts.length).toFixed(1)}%`;
   }
-  document.getElementById("svm-c").oninput=e=>{Cc=e.target.value/25;
-    document.getElementById("svm-cv").textContent=Cc.toFixed(2); train(); draw();};
-  document.getElementById("svm-data").onchange=e=>{kind=e.target.value; gen(); draw();};
-  document.querySelector('[data-act="svm-new"]').onclick=()=>{gen();draw();};
+  onParam("svm.C",v=>{Cc=v; fit(); draw();});
+  onParam("svm.gamma",v=>{gam=v; fit(); draw(); retune("svm");});
+  onParam("svm.kernel",v=>{kern=v; fit(); draw(); retune("svm");});
+  onParam("svm.data",v=>{kind=v; gen(); draw(); retune("svm");});
+  document.querySelector('[data-act="svm-new"]').onclick=()=>{gen();draw();retune("svm");};
   gen(); draw();
+  installTuner("svm",{
+    name:"C", xlab:"C (ยิ่งมาก = ยอมให้ผิดน้อยลง)", ylab:"ความแม่น", higher:true, pick:1,
+    values:CGRID, fmt:v=>fmtG(v),
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(c){const d=sp(), mm=fitSVM(d.tr,{C:c,gamma:gam,kernel:kern,T:2500,seed:9});
+      const acc=set=>set.reduce((a,p)=>a+((p.s*mm.f(p.x,p.y)>0)?1:0),0)/Math.max(1,set.length);
+      return {train:acc(d.tr),val:acc(d.va)};},
+    apply(v){setParam("svm.C",v);},
+    report(v,r){return `C ที่ดีที่สุด = ${fmtG(v)} · val ${(r.val*100).toFixed(1)}% (เทรน ${(r.train*100).toFixed(1)}%)`;}
+  });
 };
 
 /* ============ 07 K-MEANS ============ */
@@ -1014,34 +1815,24 @@ D.kmeans=function(){
   const S=stage("cv-kmeans"), g=S.g;
   const pad=24, side=Math.min(S.w-pad*2,S.h-pad*2), left=(S.w-side)/2;
   const px=x=>left+x*side, py=y=>pad+(1-y)*side;
-  const PAL=[C.p1,C.p2,C.p6,C.p4,C.p5,C.p3];
-  let R=rng(9), pts=[], k=3, cent=[], trail=[], iter=0, running=false, tick=0;
+  const PAL=[C.p1,C.p2,C.p6,C.p4,C.p5,C.p3,C.ink,C.dim];
+  let R=rng(9), pts=[], k=pv("km.k"), cent=[], trail=[], iter=0, running=false, tick=0;
+  let plus=pv("km.init")==="pp", nInit=pv("km.ninit"), seed=1234;
   function gen(){
     R=rng(Math.floor(Math.random()*1e6)+1);
     pts=makeBlobs(34,[[.26,.72],[.72,.7],[.5,.24],[.82,.4]],R,.085).map(p=>({x:p.x,y:p.y,c:0}));
     init();
   }
   function init(){
-    cent=[]; trail=[]; iter=0;
-    for(let i=0;i<k;i++){const p=pts[Math.floor(R()*pts.length)];
-      cent.push({x:p.x+.05*gauss(R),y:p.y+.05*gauss(R)}); trail.push([{x:cent[i].x,y:cent[i].y}]);}
-    assign();
-  }
-  function assign(){
-    let inertia=0;
-    pts.forEach(p=>{let bi=0,bd=1e9;
-      cent.forEach((c,i)=>{const d=(p.x-c.x)**2+(p.y-c.y)**2; if(d<bd){bd=d;bi=i;}});
-      p.c=bi; inertia+=bd;});
-    return inertia;
+    seed=Math.floor(Math.random()*1e6)+1;
+    const r2=rng(seed);
+    cent=kmeansPP(pts,k,r2,plus); trail=cent.map(c=>[{x:c.x,y:c.y}]); iter=0;
+    kmAssign(pts,cent);
   }
   function step(){
-    const sums=cent.map(()=>({x:0,y:0,n:0}));
-    pts.forEach(p=>{sums[p.c].x+=p.x; sums[p.c].y+=p.y; sums[p.c].n++;});
-    let moved=0;
-    cent.forEach((c,i)=>{if(sums[i].n){
-      const nx=sums[i].x/sums[i].n, ny=sums[i].y/sums[i].n;
-      moved+=Math.hypot(nx-c.x,ny-c.y); c.x=nx; c.y=ny; trail[i].push({x:nx,y:ny});}});
-    const inertia=assign(); iter++;
+    const moved=kmUpdate(pts,cent);
+    cent.forEach((c,i)=>trail[i].push({x:c.x,y:c.y}));
+    const inertia=kmAssign(pts,cent); iter++;
     if(moved<1e-4) running=false;
     return inertia;
   }
@@ -1052,30 +1843,46 @@ D.kmeans=function(){
       g.strokeStyle=hex2rgba(PAL[i],.4); g.lineWidth=1.4; g.beginPath();
       trail[i].forEach((t,j)=>j?g.lineTo(px(t.x),py(t.y)):g.moveTo(px(t.x),py(t.y)));
       g.stroke();
-      g.strokeStyle=hex2rgba(PAL[i],.28); g.lineWidth=1;
+      g.strokeStyle=hex2rgba(PAL[i],.26); g.lineWidth=1;
       pts.filter(p=>p.c===i).forEach(p=>{g.beginPath();
-        g.moveTo(px(p.x),py(p.y)); g.lineTo(px(c.x),py(c.y)); g.stroke();});
-    });
+        g.moveTo(px(p.x),py(p.y)); g.lineTo(px(c.x),py(c.y)); g.stroke();});});
     pts.forEach(p=>dot(g,px(p.x),py(p.y),4.2,PAL[p.c],"#fff"));
     cent.forEach((c,i)=>{
       g.strokeStyle="#fff"; g.lineWidth=5;
       g.beginPath(); g.moveTo(px(c.x)-9,py(c.y)); g.lineTo(px(c.x)+9,py(c.y));
       g.moveTo(px(c.x),py(c.y)-9); g.lineTo(px(c.x),py(c.y)+9); g.stroke();
-      g.strokeStyle=PAL[i]; g.lineWidth=3; g.stroke();
-    });
+      g.strokeStyle=PAL[i]; g.lineWidth=3; g.stroke();});
+    const inr = inertia!==undefined?inertia:kmAssign(pts,cent);
     document.getElementById("km-out").textContent =
-      `รอบที่ ${iter} · inertia = ${(inertia!==undefined?inertia:assign()).toFixed(4)}`;
+      `รอบที่ ${iter} · k=${k} · init ${plus?"k-means++":"random"} · inertia ${inr.toFixed(4)} · silhouette ${silhouette(pts,cent).toFixed(3)}`;
   }
   document.querySelector('[data-act="km-step"]').onclick=()=>{running=false;stop("km");draw(step());};
   document.querySelector('[data-act="km-run"]').onclick=()=>{
     running=!running;
     if(running){tick=0; loop("km",()=>{if(++tick%28===0){draw(step()); if(!running)stop("km");}});}
-    else stop("km");
-  };
-  document.querySelector('[data-act="km-new"]').onclick=()=>{running=false;stop("km");gen();draw();};
-  document.getElementById("km-k").oninput=e=>{k=+e.target.value;
-    document.getElementById("km-kv").textContent=k; running=false; stop("km"); init(); draw();};
+    else stop("km");};
+  document.querySelector('[data-act="km-new"]').onclick=()=>{
+    running=false;stop("km");gen();draw();retune("kmeans");};
+  onParam("km.k",v=>{k=v; running=false; stop("km"); init(); draw();});
+  onParam("km.init",v=>{plus=v==="pp"; init(); draw(); retune("kmeans");});
+  onParam("km.ninit",v=>{nInit=v; retune("kmeans");});
+  document.querySelector('[data-act="km-best"]').onclick=()=>{
+    running=false; stop("km");
+    const r=kmRun(pts,k,seed,plus,nInit); cent=r.cent; trail=cent.map(c=>[{x:c.x,y:c.y}]);
+    iter=0; draw(r.inertia);};
   gen(); draw();
+  installTuner("kmeans",{
+    name:"k", xlab:"จำนวนคลัสเตอร์ k", norm:true,
+    ylab:"สเกลเป็น 0–1 แยกเส้น · inertia ยิ่งต่ำยิ่งดี · silhouette ยิ่งสูงยิ่งดี",
+    higher:true, pick:1, values:[2,3,4,5,6,7,8],
+    series:[{k:"inertia",name:"inertia",color:C.p1,dash:true},
+            {k:"sil",name:"silhouette",color:C.p2}],
+    run(kk){const copy=pts.map(p=>({x:p.x,y:p.y,c:0}));
+      const r=kmRun(copy,kk,4242,plus,nInit);
+      return {inertia:r.inertia, sil:silhouette(copy,r.cent)};},
+    apply(v){setParam("km.k",v);},
+    report(v,r){return `k ที่ดีที่สุดตาม silhouette = ${v} (${r.sil.toFixed(3)}) — inertia ลดตลอดจึงเลือกด้วยตัวมันเองไม่ได้ ต้องดูข้อศอกหรือ silhouette`;}
+  });
 };
 
 /* ============ 08 MLP ============ */
@@ -1087,121 +1894,129 @@ D.mlp=function(){
   const netH=bw*.62;
   const lx=nx, lw=nw, ly=by+netH+48, lh=Math.max(46,by+bw-ly);
   const px=x=>bx+x*bw, py=y=>by+(1-y)*bw;
-  let R=rng(17), pts=[], H=8, lr=.15, running=false;
-  let W1,b1,W2,b2,W3,b3, losses=[], ep=0;
-  function initNet(){
-    const r=()=>gauss(R)*0.9;
-    W1=Array.from({length:H},()=>[r(),r()]); b1=new Array(H).fill(0);
-    W2=Array.from({length:H},()=>Array.from({length:H},r)); b2=new Array(H).fill(0);
-    W3=Array.from({length:H},r); b3=0; losses=[]; ep=0;
+  let R=rng(17), pts=[], H=pv("mlp.h"), nLayer=pv("mlp.layers"),
+      lr=pv("mlp.lr"), l2=pv("mlp.l2"), act=pv("mlp.act"), running=false;
+  let L=null, losses=[], vlosses=[], ep=0, sp0=null;
+  const enc=p=>[(p.x-.5)*3,(p.y-.5)*3];
+  function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeSpiral(48,R); sp0=splitData(pts,.7,5); reset();}
+  function reset(){
+    const sizes=[2]; for(let i=0;i<nLayer;i++) sizes.push(H); sizes.push(1);
+    L=netInit(sizes,R); losses=[]; vlosses=[]; ep=0;
   }
-  function gen(){R=rng(Math.floor(Math.random()*1e6)+1); pts=makeSpiral(48,R); initNet();}
-  function fwd(x,y){
-    const inp=[(x-.5)*3,(y-.5)*3];
-    const h1=W1.map((w,i)=>Math.tanh(w[0]*inp[0]+w[1]*inp[1]+b1[i]));
-    const h2=W2.map((w,i)=>Math.tanh(w.reduce((s,v,j)=>s+v*h1[j],0)+b2[i]));
-    const z=W3.reduce((s,v,j)=>s+v*h2[j],0)+b3;
-    return {inp,h1,h2,out:1/(1+Math.exp(-z))};
-  }
+  const out=(x,y)=>netFwd(L,[(x-.5)*3,(y-.5)*3],act).slice(-1)[0][0];
   function trainEpoch(){
-    const n=pts.length; let L=0;
-    const gW1=W1.map(w=>[0,0]), gb1=new Array(H).fill(0);
-    const gW2=W2.map(w=>w.map(()=>0)), gb2=new Array(H).fill(0);
-    const gW3=new Array(H).fill(0); let gb3=0;
-    for(const p of pts){
-      const {inp,h1,h2,out}=fwd(p.x,p.y);
-      const e=1e-9;
-      L+= -(p.l*Math.log(out+e)+(1-p.l)*Math.log(1-out+e));
-      const d3=out-p.l;
-      for(let i=0;i<H;i++){gW3[i]+=d3*h2[i];} gb3+=d3;
-      const d2=h2.map((v,i)=>d3*W3[i]*(1-v*v));
-      for(let i=0;i<H;i++){for(let j=0;j<H;j++) gW2[i][j]+=d2[i]*h1[j]; gb2[i]+=d2[i];}
-      const d1=h1.map((v,j)=>{let s=0; for(let i=0;i<H;i++) s+=d2[i]*W2[i][j]; return s*(1-v*v);});
-      for(let j=0;j<H;j++){gW1[j][0]+=d1[j]*inp[0]; gW1[j][1]+=d1[j]*inp[1]; gb1[j]+=d1[j];}
-    }
-    const s=lr/n;
-    for(let i=0;i<H;i++){
-      W1[i][0]-=s*gW1[i][0]; W1[i][1]-=s*gW1[i][1]; b1[i]-=s*gb1[i];
-      for(let j=0;j<H;j++) W2[i][j]-=s*gW2[i][j];
-      b2[i]-=s*gb2[i]; W3[i]-=s*gW3[i];
-    }
-    b3-=s*gb3; ep++;
-    losses.push(L/n); if(losses.length>260) losses.shift();
-    return L/n;
+    const X=sp0.tr.map(enc), Y=sp0.tr.map(p=>p.l);
+    const l=netEpoch(L,X,Y,lr,l2,act);
+    let vl=0; sp0.va.forEach(p=>{const o=out(p.x,p.y);
+      vl+=-(p.l*Math.log(o+1e-9)+(1-p.l)*Math.log(1-o+1e-9));});
+    ep++;
+    losses.push(l); vlosses.push(vl/Math.max(1,sp0.va.length));
+    if(losses.length>300){losses.shift(); vlosses.shift();}
   }
   function drawNet(){
-    const cols=[2,H,H,1], colX=cols.map((_,i)=>nx+10+i*(nw-20)/(cols.length-1));
+    const cols=[2]; for(let i=0;i<nLayer;i++) cols.push(H); cols.push(1);
+    const colX=cols.map((_,i)=>nx+10+i*(nw-20)/(cols.length-1));
     const yFor=(c,i)=>by+netH*(i+.5)/cols[c];
-    const wmax=Math.max(...W1.flat().map(Math.abs),...W2.flat().map(Math.abs),...W3.map(Math.abs),.3);
-    function edge(x1,y1,x2,y2,w){
-      g.strokeStyle = w>0?hex2rgba(C.p1,Math.min(.75,Math.abs(w)/wmax*.75))
-                         :hex2rgba(C.p2,Math.min(.75,Math.abs(w)/wmax*.75));
-      g.lineWidth=Math.max(.4,Math.abs(w)/wmax*2.4);
-      g.beginPath(); g.moveTo(x1,y1); g.lineTo(x2,y2); g.stroke();
-    }
-    for(let i=0;i<H;i++)for(let j=0;j<2;j++) edge(colX[0],yFor(0,j),colX[1],yFor(1,i),W1[i][j]);
-    for(let i=0;i<H;i++)for(let j=0;j<H;j++) edge(colX[1],yFor(1,j),colX[2],yFor(2,i),W2[i][j]);
-    for(let i=0;i<H;i++) edge(colX[2],yFor(2,i),colX[3],yFor(3,0),W3[i]);
+    let wmax=.3; L.forEach(l=>l.W.forEach(w=>w.forEach(v=>{wmax=Math.max(wmax,Math.abs(v));})));
+    L.forEach((l,li)=>{
+      l.W.forEach((w,r)=>w.forEach((v,c)=>{
+        g.strokeStyle = v>0?hex2rgba(C.p1,Math.min(.75,Math.abs(v)/wmax*.75))
+                           :hex2rgba(C.p2,Math.min(.75,Math.abs(v)/wmax*.75));
+        g.lineWidth=Math.max(.4,Math.abs(v)/wmax*2.4);
+        g.beginPath(); g.moveTo(colX[li],yFor(li,c)); g.lineTo(colX[li+1],yFor(li+1,r)); g.stroke();}));
+    });
     cols.forEach((n,c)=>{for(let i=0;i<n;i++)
-      dot(g,colX[c],yFor(c,i),c===0||c===3?6:4.6,"#fff",C.ink);});
-    ["in","h1","h2","out"].forEach((t,i)=>label(g,t,colX[i],by+netH+14,C.dim,10,"center"));
+      dot(g,colX[c],yFor(c,i),(c===0||c===cols.length-1)?6:4.6,"#fff",C.ink);});
+    cols.forEach((n,c)=>label(g,c===0?"in":(c===cols.length-1?"out":"h"+c),colX[c],by+netH+14,C.dim,10,"center"));
   }
   function drawLoss(){
     if(lw<70) return;
-    label(g,losses.length?"TRAINING LOSS  "+losses[losses.length-1].toFixed(4):"TRAINING LOSS",lx,ly-7,C.dim,10);
+    label(g,losses.length?"LOSS  เทรน "+losses[losses.length-1].toFixed(3)+"  ·  val "+vlosses[vlosses.length-1].toFixed(3):"TRAINING LOSS",lx,ly-7,C.dim,10);
     g.strokeStyle=C.rule; g.strokeRect(lx+.5,ly+.5,lw,lh);
     if(losses.length<2) return;
-    const mx=Math.max(...losses), mn=Math.min(...losses);
-    g.strokeStyle=C.p3; g.lineWidth=1.8; g.beginPath();
-    losses.forEach((v,i)=>{
-      const X=lx+i/(losses.length-1)*lw;
-      const Y=ly+lh-(mx-mn<1e-9?.5:(v-mn)/(mx-mn))*(lh-10)-5;
-      i?g.lineTo(X,Y):g.moveTo(X,Y);});
-    g.stroke();
+    const all=losses.concat(vlosses), mx=Math.max(...all), mn=Math.min(...all);
+    [[losses,C.p1,true],[vlosses,C.p2,false]].forEach(sr=>{
+      g.save(); if(sr[2]) g.setLineDash([5,4]);
+      g.strokeStyle=sr[1]; g.lineWidth=1.8; g.beginPath();
+      sr[0].forEach((v,i)=>{const X=lx+i/(sr[0].length-1)*lw;
+        const Y=ly+lh-(mx-mn<1e-9?.5:(v-mn)/(mx-mn))*(lh-10)-5;
+        i?g.lineTo(X,Y):g.moveTo(X,Y);});
+      g.stroke(); g.restore();});
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const s=6;
     for(let i=0;i<bw;i+=s)for(let j=0;j<bw;j+=s){
-      const p=fwd(i/bw,1-j/bw).out;
+      const p=out(i/bw,1-j/bw);
       g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.7):hex2rgba(C.p1,(.5-p)*.7);
-      g.fillRect(bx+i,by+j,s,s);
-    }
+      g.fillRect(bx+i,by+j,s,s);}
     g.strokeStyle=C.rule; g.strokeRect(bx+.5,by+.5,bw,bw);
-    let ok=0;
-    pts.forEach(p=>{if((fwd(p.x,p.y).out>.5?1:0)===p.l)ok++;
-      dot(g,px(p.x),py(p.y),3.6,CLS[p.l],"#fff");});
+    let ok=0, okv=0;
+    sp0.tr.forEach(p=>{if((out(p.x,p.y)>.5?1:0)===p.l)ok++; dot(g,px(p.x),py(p.y),3.6,CLS[p.l],"#fff");});
+    sp0.va.forEach(p=>{if((out(p.x,p.y)>.5?1:0)===p.l)okv++; ring(g,px(p.x),py(p.y),4,CLS[p.l]);});
     drawNet(); drawLoss();
     document.getElementById("mlp-out").textContent =
-      `epoch ${ep} · ความแม่น ${(100*ok/pts.length).toFixed(1)}% · hidden ${H}×2`;
+      `epoch ${ep} · ${nLayer}×${H} ${act} · α ${fmtG(l2)} · เทรน ${(100*ok/Math.max(1,sp0.tr.length)).toFixed(1)}% · val ${(100*okv/Math.max(1,sp0.va.length)).toFixed(1)}%`;
   }
   document.querySelector('[data-act="mlp-run"]').onclick=()=>{
     running=!running;
-    if(running) loop("mlp",()=>{for(let i=0;i<6;i++) trainEpoch(); draw();});
-    else stop("mlp");
-  };
+    if(running) loop("mlp",()=>{for(let i=0;i<5;i++) trainEpoch(); draw();});
+    else stop("mlp");};
   document.querySelector('[data-act="mlp-reset"]').onclick=()=>{
-    running=false; stop("mlp"); initNet(); draw();};
-  document.getElementById("mlp-h").oninput=e=>{H=+e.target.value;
-    document.getElementById("mlp-hv").textContent=H; initNet(); draw();};
-  document.getElementById("mlp-lr").oninput=e=>{lr=e.target.value/100;
-    document.getElementById("mlp-lrv").textContent=lr.toFixed(2);};
+    running=false; stop("mlp"); reset(); draw();};
+  onParam("mlp.h",v=>{H=v; reset(); draw();});
+  onParam("mlp.layers",v=>{nLayer=v; reset(); draw();});
+  onParam("mlp.lr",v=>{lr=v;});
+  onParam("mlp.l2",v=>{l2=v;});
+  onParam("mlp.act",v=>{act=v; reset(); draw();});
   gen(); draw();
+  installTuner("mlp",{
+    name:"hidden units", xlab:"จำนวน hidden unit ต่อชั้น", ylab:"ความแม่น", higher:true, pick:1,
+    auto:false, idle:"กดปุ่มเพื่อเทรนโมเดล 6 ขนาดแล้วเทียบกัน (ใช้เวลาราว 1–3 วินาที)",
+    values:[2,4,6,8,12,16,20,24],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(h){
+      const rr=rng(99), sizes=[2]; for(let i=0;i<nLayer;i++) sizes.push(h); sizes.push(1);
+      const net=netInit(sizes,rr);
+      const X=sp0.tr.map(enc), Y=sp0.tr.map(p=>p.l);
+      for(let e=0;e<500;e++) netEpoch(net,X,Y,lr,l2,act);
+      const acc=set=>set.reduce((a,p)=>{
+        const o=netFwd(net,enc(p),act).slice(-1)[0][0];
+        return a+(((o>.5?1:0)===p.l)?1:0);},0)/Math.max(1,set.length);
+      return {train:acc(sp0.tr),val:acc(sp0.va)};},
+    apply(v){setParam("mlp.h",v);},
+    report(v,r){return `hidden ที่ดีที่สุด = ${v} (เทรน 500 epoch) · val ${(r.val*100).toFixed(1)}% · เทรน ${(r.train*100).toFixed(1)}%`;}
+  });
 };
 
 /* ============ 09 CNN ============ */
 D.cnn=function(){
   const S=stage("cv-cnn"), g=S.g;
-  const N=16, M=N-2;
-  const cell=Math.min((S.h-124)/N,(S.w-100)/(N+2*M));
-  const x0=18, y0=30;
-  const x1=x0+N*cell+28, x2=x1+M*cell+24;
-  const KER={
+  const N=16;
+  const K3={
     sobelx:[[1,0,-1],[2,0,-2],[1,0,-1]], sobely:[[1,2,1],[0,0,0],[-1,-2,-1]],
     blur:[[1/9,1/9,1/9],[1/9,1/9,1/9],[1/9,1/9,1/9]],
     sharp:[[0,-1,0],[-1,5,-1],[0,-1,0]], emboss:[[-2,-1,0],[-1,1,1],[0,1,2]]
   };
-  let img=[], kname="sobelx", anim=null, drawing=0;
+  function kernel(name,size){
+    if(size===3) return K3[name];
+    const K=[];
+    for(let i=0;i<5;i++){K.push([]);
+      for(let j=0;j<5;j++){
+        const a=i-2, b=j-2;
+        let v;
+        if(name==="sobelx") v=-b*(3-Math.abs(a));
+        else if(name==="sobely") v=-a*(3-Math.abs(b));
+        else if(name==="blur") v=1/25;
+        else if(name==="sharp") v=(a===0&&b===0)?9:-1/2;
+        else v=(a+b)===0?1:(a+b>0?1:-1)*(Math.abs(a+b)>1?2:1);
+        K[i].push(v);}}
+    return K;
+  }
+  let img=[], kname=pv("cnn.kernel"), ks=pv("cnn.size"), stride=pv("cnn.stride"),
+      padMode=pv("cnn.pad"), pool=pv("cnn.pool"), anim=null, drawing=0;
+  const outSize=()=>{const p=padMode==="same"?Math.floor(ks/2):0;
+    return Math.floor((N+2*p-ks)/stride)+1;};
   function clearImg(){img=Array.from({length:N},()=>new Array(N).fill(0));}
   function preset(){
     clearImg();
@@ -1212,18 +2027,22 @@ D.cnn=function(){
     for(let c=5;c<=9;c++) put(8,c,.9);
   }
   function conv(){
-    const K=KER[kname], out=[];
+    const K=kernel(kname,ks), p=padMode==="same"?Math.floor(ks/2):0, M=outSize(), out=[];
+    const at=(r,c)=>(r<0||c<0||r>=N||c>=N)?0:img[r][c];
     for(let i=0;i<M;i++){out.push([]);
       for(let j=0;j<M;j++){let s=0;
-        for(let a=0;a<3;a++)for(let b=0;b<3;b++) s+=img[i+a][j+b]*K[a][b];
+        for(let a=0;a<ks;a++)for(let b=0;b<ks;b++) s+=at(i*stride+a-p, j*stride+b-p)*K[a][b];
         out[i].push(s);}}
     return out;
   }
-  function relu(F){return F.map(r=>r.map(v=>Math.max(0,v)));}
-  function pool(F){
-    const P=[], n=Math.floor(F.length/2);
+  const relu=F=>F.map(r=>r.map(v=>Math.max(0,v)));
+  function poolF(F){
+    if(pool==="none") return F;
+    const n=Math.floor(F.length/2), P=[];
     for(let i=0;i<n;i++){P.push([]);
-      for(let j=0;j<n;j++) P[i].push(Math.max(F[2*i][2*j],F[2*i][2*j+1],F[2*i+1][2*j],F[2*i+1][2*j+1]));}
+      for(let j=0;j<n;j++){
+        const q=[F[2*i][2*j],F[2*i][2*j+1],F[2*i+1][2*j],F[2*i+1][2*j+1]];
+        P[i].push(pool==="max"?Math.max.apply(null,q):(q[0]+q[1]+q[2]+q[3])/4);}}
     return P;
   }
   function drawGrid(F,ox,oy,cs,mode,ttl){
@@ -1231,176 +2050,209 @@ D.cnn=function(){
     for(let i=0;i<F.length;i++)for(let j=0;j<F[i].length;j++){
       const v=F[i][j];
       if(mode==="img"){const t=Math.round(255-v*230); g.fillStyle=`rgb(${t},${t+4},${t+8})`;}
-      else if(mode==="signed") g.fillStyle = v>=0?hex2rgba(C.p1,Math.min(1,v/mx)):hex2rgba(C.p2,Math.min(1,-v/mx));
+      else if(mode==="signed") g.fillStyle=v>=0?hex2rgba(C.p1,Math.min(1,v/mx)):hex2rgba(C.p2,Math.min(1,-v/mx));
       else g.fillStyle=hex2rgba(C.p4,Math.min(1,v/mx));
-      g.fillRect(ox+j*cs,oy+i*cs,cs-0.6,cs-0.6);
-    }
+      g.fillRect(ox+j*cs,oy+i*cs,Math.max(1,cs-0.6),Math.max(1,cs-0.6));}
     g.strokeStyle=C.rule; g.strokeRect(ox+.5,oy+.5,F[0].length*cs,F.length*cs);
     label(g,ttl,ox,oy-8,C.dim,10);
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
+    const F=conv(), M=F.length, P=poolF(relu(F));
+    const cell=Math.min((S.h-124)/N,(S.w-100)/(N+M+P.length*2));
+    const x0=18, y0=30, x1=x0+N*cell+28, x2=x1+M*cell+24;
     drawGrid(img,x0,y0,cell,"img",`INPUT ${N}×${N}`);
-    const F=conv();
     drawGrid(F,x1,y0,cell,"signed",`FEATURE MAP ${M}×${M}`);
-    const P=pool(relu(F));
-    drawGrid(P,x2,y0,cell*2,"pos",`ReLU + MAXPOOL ${P.length}×${P.length}`);
-    const K=KER[kname];
-    const ks=Math.min(26,cell*1.6), ky=y0+N*cell+16;
-    label(g,"KERNEL 3×3",x0,ky+10,C.dim,10);
-    for(let a=0;a<3;a++)for(let b=0;b<3;b++){
-      const X=x0+86+b*ks, Y=ky-6+a*ks;
-      g.fillStyle="#fff"; g.strokeStyle=C.rule; g.fillRect(X,Y,ks-1,ks-1); g.strokeRect(X+.5,Y+.5,ks-1,ks-1);
-      label(g,(Math.round(K[a][b]*100)/100).toString(),X+ks/2-.5,Y+ks/2+4,C.ink,9.5,"center");
-    }
-    if(anim){
-      const i=Math.floor(anim/M), j=anim%M;
+    drawGrid(P,x2,y0,cell*2,"pos",(pool==="none"?"ReLU ":"ReLU + "+(pool==="max"?"MAXPOOL ":"AVGPOOL "))+P.length+"×"+P.length);
+    const K=kernel(kname,ks), kc=Math.min(24,cell*1.5), ky=y0+N*cell+18;
+    label(g,`KERNEL ${ks}×${ks}`,x0,ky+10,C.dim,10);
+    for(let a=0;a<ks;a++)for(let b=0;b<ks;b++){
+      const X=x0+86+b*kc, Y=ky-8+a*kc;
+      g.fillStyle="#fff"; g.strokeStyle=C.rule;
+      g.fillRect(X,Y,kc-1,kc-1); g.strokeRect(X+.5,Y+.5,kc-1,kc-1);
+      label(g,String(Math.round(K[a][b]*100)/100),X+kc/2-.5,Y+kc/2+3.5,C.ink,ks===5?7.5:9,"center");}
+    if(anim!==null){
+      const i=Math.floor(anim/M), j=anim%M, p=padMode==="same"?Math.floor(ks/2):0;
       g.strokeStyle=C.p3; g.lineWidth=2.4;
-      g.strokeRect(x0+j*cell,y0+i*cell,cell*3,cell*3);
-      g.fillStyle=hex2rgba(C.p3,.16); g.fillRect(x0+j*cell,y0+i*cell,cell*3,cell*3);
+      g.strokeRect(x0+(j*stride-p)*cell,y0+(i*stride-p)*cell,cell*ks,cell*ks);
+      g.fillStyle=hex2rgba(C.p3,.16);
+      g.fillRect(x0+(j*stride-p)*cell,y0+(i*stride-p)*cell,cell*ks,cell*ks);
       g.strokeRect(x1+j*cell,y0+i*cell,cell,cell);
     }
     document.getElementById("cnn-out").textContent =
-      `${N}×${N} → conv3×3 → ${M}×${M} → pool2×2 → ${P.length}×${P.length}`;
+      `${N}×${N} → conv ${ks}×${ks} stride ${stride} ${padMode} → ${M}×${M} → ${pool==="none"?"ไม่ pool":"pool 2×2"} → ${P.length}×${P.length} · พารามิเตอร์ของ kernel ${ks*ks} ตัว`;
   }
   function paint(e,erase){
+    const F=conv(), cell=Math.min((S.h-124)/N,(S.w-100)/(N+F.length+poolF(relu(F)).length*2));
     const p=pointerPos(S.c,e);
-    const j=Math.floor((p.x-x0)/cell), i=Math.floor((p.y-y0)/cell);
+    const j=Math.floor((p.x-18)/cell), i=Math.floor((p.y-30)/cell);
     if(i>=0&&i<N&&j>=0&&j<N){img[i][j]=erase?0:1; draw();}
   }
   S.c.oncontextmenu=e=>e.preventDefault();
   S.c.onmousedown=e=>{drawing=(e.button===2||e.shiftKey)?2:1; paint(e,drawing===2);};
   S.c.onmousemove=e=>{if(drawing) paint(e,drawing===2);};
-  if(!window.__cnnUp){window.__cnnUp=true; window.addEventListener("mouseup",()=>{window.__cnnDrawStop&&window.__cnnDrawStop();});}
-  window.__cnnDrawStop=()=>{drawing=0;};
+  if(!window.__cnnUp){window.__cnnUp=true;
+    window.addEventListener("mouseup",()=>{window.__cnnStop&&window.__cnnStop();});}
+  window.__cnnStop=()=>{drawing=0;};
   S.c.ontouchstart=e=>{e.preventDefault(); drawing=1; paint(e,false);};
   S.c.ontouchmove=e=>{e.preventDefault(); paint(e,false);};
   S.c.ontouchend=()=>{drawing=0;};
-  document.getElementById("cnn-k").onchange=e=>{kname=e.target.value; draw();};
+  onParam("cnn.kernel",v=>{kname=v; draw();});
+  onParam("cnn.size",v=>{ks=v; anim=null; stop("cnn"); draw(); retune("cnn");});
+  onParam("cnn.stride",v=>{stride=v; anim=null; stop("cnn"); draw(); retune("cnn");});
+  onParam("cnn.pad",v=>{padMode=v; anim=null; stop("cnn"); draw(); retune("cnn");});
+  onParam("cnn.pool",v=>{pool=v; draw(); retune("cnn");});
   document.querySelector('[data-act="cnn-clear"]').onclick=()=>{clearImg();draw();};
   document.querySelector('[data-act="cnn-preset"]').onclick=()=>{preset();draw();};
   document.querySelector('[data-act="cnn-anim"]').onclick=()=>{
     if(RAF.cnn){stop("cnn"); anim=null; draw(); return;}
-    anim=0; let t=0;
-    loop("cnn",()=>{if(++t%2===0){anim++; if(anim>=M*M){anim=null; stop("cnn");} draw();}});
-  };
+    const M=outSize(); anim=0; let t=0;
+    loop("cnn",()=>{if(++t%2===0){anim++; if(anim>=M*M){anim=null; stop("cnn");} draw();}});};
   preset(); draw();
+  installTuner("cnn",{
+    name:"config", mode:"bars", noBest:true,
+    ylab:"ขนาด feature map ที่ได้ (ยิ่งเล็ก = คำนวณเบา แต่รายละเอียดหาย)",
+    higher:false, values:[0,1,2,3,4,5],
+    run(i){
+      const cfg=[[3,1,"valid"],[3,1,"same"],[3,2,"valid"],[5,1,"valid"],[5,1,"same"],[5,2,"valid"]][i];
+      const p=cfg[2]==="same"?Math.floor(cfg[0]/2):0;
+      const m=Math.floor((N+2*p-cfg[0])/cfg[1])+1;
+      return {v:m, label:`${cfg[0]}×${cfg[0]} s${cfg[1]} ${cfg[2]==="same"?"same":"valid"}`,
+              color:(cfg[0]===ks&&cfg[1]===stride&&cfg[2]===padMode)?C.p3:C.p1};},
+    fmt:v=>v+"×"+v,
+    report(){return `สูตร: out = ⌊(N + 2·padding − kernel) / stride⌋ + 1 · ตอนนี้ ${N}→${outSize()} (แท่งสีส้มคือค่าที่ตั้งอยู่)`;}
+  });
 };
 
 /* ============ 10 LSTM ============ */
 D.lstm=function(){
   const S=stage("cv-lstm"), g=S.g;
-  const T=40, R=rng(29);
+  const T=40;
   const seq=Array.from({length:T},(_,t)=>Math.sin(t/4.5)*.7+Math.sin(t/11)*.3);
-  const Wf=[.9,-1.4,.3], Wi=[1.5,.6,-.2], Wo=[1.1,.9,.1], Wg=[1.8,-.7,0];
   const sig=z=>1/(1+Math.exp(-z));
+  let fb=pv("lstm.fb"), ib=pv("lstm.ib"), wx=pv("lstm.wx"), spd=pv("lstm.speed");
   let t=0, c=0, h=0, hist=[], running=false, tk=0;
   function reset(){t=0;c=0;h=0;hist=[];}
+  function gates(x,hh){
+    return {f:sig(.9*x-1.4*hh+fb), i:sig(wx*x+.6*hh+ib),
+            o:sig(1.1*x+.9*hh+.1), g:Math.tanh(1.8*x-.7*hh)};
+  }
   function stepOne(){
-    const x=seq[t%T];
-    const f=sig(Wf[0]*x+Wf[1]*h+Wf[2]);
-    const i=sig(Wi[0]*x+Wi[1]*h+Wi[2]);
-    const o=sig(Wo[0]*x+Wo[1]*h+Wo[2]);
-    const gg=Math.tanh(Wg[0]*x+Wg[1]*h+Wg[2]);
-    c=f*c+i*gg; h=o*Math.tanh(c);
-    hist.push({x,f,i,o,g:gg,c,h}); if(hist.length>T) hist.shift();
+    const x=seq[t%T], gt=gates(x,h);
+    c=gt.f*c+gt.i*gt.g; h=gt.o*Math.tanh(c);
+    hist.push({x,f:gt.f,i:gt.i,o:gt.o,g:gt.g,c,h}); if(hist.length>T) hist.shift();
     t++;
+  }
+  function halfLife(bias){
+    // เก็บค่า 1 ไว้ในความจำหนึ่งครั้ง แล้วปล่อยให้ไม่มีอินพุตเข้ามาอีก
+    // นับว่า cell state ยังเหลือเกินครึ่งอยู่ได้กี่ step
+    const f=sig(bias);
+    let cc=1;
+    for(let k=1;k<=80;k++){ cc*=f; if(cc<.5) return k; }
+    return 80;
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
     const pad=20, topH=Math.min(96,S.h*.3), w=S.w-pad*2;
-    // sequence strip
     label(g,"INPUT SEQUENCE  x₁ … x₄₀",pad,16,C.dim,10);
     g.strokeStyle=C.rule; g.strokeRect(pad+.5,22.5,w,topH);
     const bw=w/T;
     for(let k=0;k<T;k++){
       const v=seq[k], hgt=Math.abs(v)*(topH/2-6);
       g.fillStyle = k===(t-1+T)%T ? C.p3 : hex2rgba(C.p1,.5);
-      g.fillRect(pad+k*bw+1, 22+topH/2-(v>0?hgt:0), bw-2, hgt);
-    }
-    g.strokeStyle=hex2rgba(C.dim,.5); g.beginPath();
-    g.moveTo(pad,22+topH/2); g.lineTo(pad+w,22+topH/2); g.stroke();
-    // gates
+      g.fillRect(pad+k*bw+1, 22+topH/2-(v>0?hgt:0), Math.max(1,bw-2), hgt);}
+    g.strokeStyle=hex2rgba(C.dim,.5);
+    g.beginPath(); g.moveTo(pad,22+topH/2); g.lineTo(pad+w,22+topH/2); g.stroke();
     const gy=topH+52, gh=S.h-gy-26, gwid=w*.34;
     label(g,"GATE VALUES ณ step ปัจจุบัน",pad,gy-10,C.dim,10);
     g.strokeStyle=C.rule; g.strokeRect(pad+.5,gy+.5,gwid,gh);
     const cur=hist[hist.length-1]||{f:0,i:0,o:0,g:0,c:0,h:0};
-    const gates=[["forget  f",cur.f,C.p2],["input   i",cur.i,C.p1],["candid  g",(cur.g+1)/2,C.p6],["output  o",cur.o,C.p4]];
-    gates.forEach((gt,k)=>{
+    [["forget  f",cur.f,C.p2],["input   i",cur.i,C.p1],
+     ["candid  g",(cur.g+1)/2,C.p6],["output  o",cur.o,C.p4]].forEach((gt,k)=>{
       const y=gy+18+k*(gh-24)/4, bh=Math.min(16,(gh-30)/5);
       label(g,gt[0],pad+8,y+bh-3,C.ink,10);
       const bx=pad+82, bwid=gwid-96;
       g.fillStyle=C.hair; g.fillRect(bx,y,bwid,bh);
       g.fillStyle=gt[2]; g.fillRect(bx,y,bwid*gt[1],bh);
-      label(g,gt[1].toFixed(2),bx+bwid+4,y+bh-3,C.dim,9.5);
-    });
-    // memory chart
+      label(g,gt[1].toFixed(2),bx+bwid+4,y+bh-3,C.dim,9.5);});
     const mx=pad+gwid+22, mw=S.w-pad-mx;
     label(g,"CELL STATE c (ม่วง) และ OUTPUT h (เขียว)",mx,gy-10,C.dim,10);
     g.strokeStyle=C.rule; g.strokeRect(mx+.5,gy+.5,mw,gh);
     if(hist.length>1){
-      const all=hist.flatMap(d=>[d.c,d.h]);
+      const all=hist.reduce((a,d)=>a.concat([d.c,d.h]),[]);
       const lo=Math.min(-1,...all), hi=Math.max(1,...all);
       const Y=v=>gy+gh-((v-lo)/(hi-lo))*(gh-10)-5;
-      g.strokeStyle=hex2rgba(C.dim,.4); g.beginPath();
-      g.moveTo(mx,Y(0)); g.lineTo(mx+mw,Y(0)); g.stroke();
-      [["c",C.p5],["h",C.p4]].forEach(([key,col])=>{
-        g.strokeStyle=col; g.lineWidth=2; g.beginPath();
-        hist.forEach((d,k)=>{const X=mx+k/(T-1)*mw;
-          k?g.lineTo(X,Y(d[key])):g.moveTo(X,Y(d[key]));});
-        g.stroke();
-      });
+      g.strokeStyle=hex2rgba(C.dim,.4);
+      g.beginPath(); g.moveTo(mx,Y(0)); g.lineTo(mx+mw,Y(0)); g.stroke();
+      [["c",C.p5],["h",C.p4]].forEach(sr=>{
+        g.strokeStyle=sr[1]; g.lineWidth=2; g.beginPath();
+        hist.forEach((d,k)=>{const X=mx+k/(T-1)*mw; k?g.lineTo(X,Y(d[sr[0]])):g.moveTo(X,Y(d[sr[0]]));});
+        g.stroke();});
     }
     document.getElementById("lstm-out").textContent =
-      `t = ${t} · c = ${cur.c.toFixed(3)} · h = ${cur.h.toFixed(3)}`;
+      `t=${t} · forget bias ${fb.toFixed(1)} · input bias ${ib.toFixed(1)} · c ${cur.c.toFixed(3)} · h ${cur.h.toFixed(3)}`;
   }
   document.querySelector('[data-act="lstm-run"]').onclick=()=>{
     running=!running;
-    if(running){tk=0; loop("lstm",()=>{if(++tk%12===0){stepOne();draw();}});}
-    else stop("lstm");
-  };
+    if(running){tk=0; loop("lstm",()=>{if(++tk%spd===0){stepOne();draw();}});} else stop("lstm");};
   document.querySelector('[data-act="lstm-step"]').onclick=()=>{
     running=false; stop("lstm"); stepOne(); draw();};
   document.querySelector('[data-act="lstm-reset"]').onclick=()=>{
-    running=false; stop("lstm"); reset(); draw();};
+    running=false; stop("lstm"); reset(); for(let i=0;i<4;i++) stepOne(); draw();};
+  onParam("lstm.fb",v=>{fb=v; draw();});
+  onParam("lstm.ib",v=>{ib=v; draw(); retune("lstm");});
+  onParam("lstm.wx",v=>{wx=v; draw(); retune("lstm");});
+  onParam("lstm.speed",v=>{spd=v;});
   reset(); for(let i=0;i<4;i++) stepOne(); draw();
+  installTuner("lstm",{
+    name:"forget bias", xlab:"ค่าเริ่มต้นของ forget gate bias",
+    ylab:"จำนวน step ที่ความจำยังเหลือเกินครึ่ง", higher:true, pick:0,
+    values:[-2,-1.5,-1,-0.5,0,0.5,1,1.5,2,2.5,3],
+    fmt:v=>v.toFixed(1),
+    series:[{k:"life",name:"อายุความจำ (step)",color:C.p5}],
+    run(b){return {life:halfLife(b)};},
+    apply(v){setParam("lstm.fb",v);},
+    report(v,r){return `forget bias ${v.toFixed(1)} → ความจำอยู่ได้ ${r.life} step — นี่คือเหตุผลที่คู่มือหลายเล่มแนะนำให้ตั้ง forget bias เริ่มต้นเป็น 1.0`;}
+  });
 };
 
-/* ============ 11 TRANSFORMER ATTENTION ============ */
+/* ============ 11 TRANSFORMER ============ */
 D.attn=function(){
   const S=stage("cv-attn"), g=S.g;
   const SENT=[
     ["the","cat","sat","on","the","mat","because","it","was","warm"],
     ["a","model","learns","patterns","from","data","over","time"]
   ];
-  let si=0, head=0, hover=-1, A=[], toks=[];
-  function compute(){
-    toks=SENT[si];
-    const n=toks.length, d=8, R=rng(101+si*37+head*11);
-    const E=toks.map((w,i)=>{
+  let si=pv("attn.sent"), head=pv("attn.head"), temp=pv("attn.T"), dk=pv("attn.dk"),
+      hover=-1, A=[], toks=[], geo={};
+  function attnFor(tp,d,hd){
+    const tk=SENT[si], n=tk.length;
+    const E=tk.map((w,i)=>{
       let s=0; for(const ch of w) s+=ch.charCodeAt(0);
-      const r=rng(s*7+head*13+1);
-      return Array.from({length:d},()=>r()*2-1 + .3*Math.sin(i/2+head));
-    });
+      const r=rng(s*7+hd*13+1);
+      return Array.from({length:d},()=>r()*2-1+.3*Math.sin(i/2+hd));});
+    const R=rng(101+si*37+hd*11);
     const Wq=Array.from({length:d},()=>Array.from({length:d},()=>gauss(R)*.6));
     const Wk=Array.from({length:d},()=>Array.from({length:d},()=>gauss(R)*.6));
     const proj=(v,W)=>W.map(row=>row.reduce((s,x,j)=>s+x*v[j],0));
     const Q=E.map(v=>proj(v,Wq)), K=E.map(v=>proj(v,Wk));
-    A=Q.map(q=>{
-      const sc=K.map(k=>q.reduce((s,x,j)=>s+x*k[j],0)/Math.sqrt(d));
+    return Q.map(q=>{
+      const sc=K.map(k=>q.reduce((s,x,j)=>s+x*k[j],0)/Math.sqrt(d)/tp);
       const mx=Math.max(...sc), ex=sc.map(v=>Math.exp(v-mx)), sum=ex.reduce((a,b)=>a+b,0);
-      return ex.map(v=>v/sum);
-    });
+      return ex.map(v=>v/sum);});
   }
-  let geo={};
+  function entropy(M){
+    let e=0;
+    M.forEach(row=>{let h=0; row.forEach(v=>{if(v>1e-9) h-=v*Math.log2(v);}); e+=h;});
+    return e/M.length;
+  }
+  function compute(){toks=SENT[si]; A=attnFor(temp,dk,head);}
   function draw(){
     g.clearRect(0,0,S.w,S.h);
-    const n=toks.length;
-    const top=54, pad=Math.min(88,Math.max(46,S.w*0.16));
+    const n=toks.length, top=54, pad=Math.min(88,Math.max(46,S.w*0.16));
     const cs=Math.max(9,Math.min((S.h-top-58)/n,(S.w-pad-34)*0.56/n));
-    const gx=pad, gy=top;
-    geo={gx,gy,cs,n};
-    label(g,"ATTENTION MATRIX  (แถว = คำที่มอง, คอลัมน์ = คำที่ถูกมอง)",gx-62,20,C.dim,10);
+    const gx=pad, gy=top; geo={gx,gy,cs,n};
+    label(g,"ATTENTION MATRIX  (แถว = คำที่มอง, คอลัมน์ = คำที่ถูกมอง)",gx-40,20,C.dim,10);
     for(let i=0;i<n;i++){
       label(g,toks[i],gx-8,gy+i*cs+cs/2+4,hover===i?C.p3:C.ink,11,"end");
       g.save(); g.translate(gx+i*cs+cs/2,gy-8); g.rotate(-Math.PI/4);
@@ -1409,86 +2261,106 @@ D.attn=function(){
         const v=A[i][j];
         g.fillStyle=hex2rgba(C.p5,Math.pow(v,.7));
         g.fillRect(gx+j*cs,gy+i*cs,cs-1,cs-1);
-        if(cs>26) label(g,v.toFixed(2),gx+j*cs+cs/2,gy+i*cs+cs/2+3.5,v>.35?"#fff":hex2rgba(C.ink,.55),8.5,"center");
-      }
-      if(hover===i){g.strokeStyle=C.p3; g.lineWidth=2;
-        g.strokeRect(gx-.5,gy+i*cs-.5,n*cs,cs);}
+        if(cs>26) label(g,v.toFixed(2),gx+j*cs+cs/2,gy+i*cs+cs/2+3.5,v>.35?"#fff":hex2rgba(C.ink,.55),8.5,"center");}
+      if(hover===i){g.strokeStyle=C.p3; g.lineWidth=2; g.strokeRect(gx-.5,gy+i*cs-.5,n*cs,cs);}
     }
-    // token flow diagram on the right
     const fx=gx+n*cs+26, fw=Math.max(70,S.w-(gx+n*cs+26)-14);
     label(g,"เส้นความสนใจของคำที่เลือก",fx,20,C.dim,10);
     const ty=gy+20, spacing=Math.min(30,(S.h-ty-40)/n);
     for(let i=0;i<n;i++){
       const y=ty+i*spacing;
-      g.fillStyle = hover===i?C.p3:"#fff"; g.strokeStyle=C.ink; g.lineWidth=1;
+      g.fillStyle=hover===i?C.p3:"#fff"; g.strokeStyle=C.ink; g.lineWidth=1;
       g.fillRect(fx,y,fw*.42,spacing-5); g.strokeRect(fx+.5,y+.5,fw*.42,spacing-5);
-      label(g,toks[i],fx+6,y+spacing-9,hover===i?"#fff":C.ink,10.5);
-    }
+      label(g,toks[i],fx+6,y+spacing-9,hover===i?"#fff":C.ink,10.5);}
     if(hover>=0){
       for(let j=0;j<n;j++){
-        const v=A[hover][j];
-        if(v<0.04) continue;
+        const v=A[hover][j]; if(v<0.04) continue;
         const y1=ty+hover*spacing+(spacing-5)/2, y2=ty+j*spacing+(spacing-5)/2;
-        g.strokeStyle=hex2rgba(C.p5,Math.min(.9,v*2.2));
-        g.lineWidth=Math.max(.6,v*11);
+        g.strokeStyle=hex2rgba(C.p5,Math.min(.9,v*2.2)); g.lineWidth=Math.max(.6,v*11);
         g.beginPath(); g.moveTo(fx+fw*.42,y1);
         g.bezierCurveTo(fx+fw*.72,y1,fx+fw*.72,y2,fx+fw*.95,y2); g.stroke();
-        dot(g,fx+fw*.95,y2,3,C.p5);
-      }
+        dot(g,fx+fw*.95,y2,3,C.p5);}
       const row=A[hover], top3=row.map((v,j)=>({v,j})).sort((a,b)=>b.v-a.v).slice(0,3);
       document.getElementById("attn-out").textContent =
-        `"${toks[hover]}" สนใจ: ` + top3.map(o=>`${toks[o.j]} ${(o.v*100).toFixed(0)}%`).join(" · ");
-    } else document.getElementById("attn-out").textContent="เลื่อนเมาส์บนตารางเพื่อเลือกแถว";
+        `"${toks[hover]}" สนใจ: `+top3.map(o=>`${toks[o.j]} ${(o.v*100).toFixed(0)}%`).join(" · ");
+    } else document.getElementById("attn-out").textContent =
+      `temperature ${temp.toFixed(2)} · d_k ${dk} · entropy เฉลี่ย ${entropy(A).toFixed(2)} bit — เลื่อนเมาส์บนตารางเพื่อดูรายละเอียด`;
   }
   S.c.onmousemove=e=>{
-    const p=pointerPos(S.c,e);
-    const i=Math.floor((p.y-geo.gy)/geo.cs);
+    const p=pointerPos(S.c,e), i=Math.floor((p.y-geo.gy)/geo.cs);
     const nh=(p.x>geo.gx-70&&p.x<geo.gx+geo.n*geo.cs&&i>=0&&i<geo.n)?i:-1;
-    if(nh!==hover){hover=nh; draw();}
-  };
+    if(nh!==hover){hover=nh; draw();}};
   S.c.onmouseleave=()=>{hover=-1;draw();};
-  document.getElementById("attn-s").onchange=e=>{si=+e.target.value; hover=-1; compute(); draw();};
-  document.getElementById("attn-h").onchange=e=>{head=+e.target.value; compute(); draw();};
+  onParam("attn.sent",v=>{si=v; hover=-1; compute(); draw(); retune("attn");});
+  onParam("attn.head",v=>{head=v; compute(); draw(); retune("attn");});
+  onParam("attn.T",v=>{temp=v; compute(); draw();});
+  onParam("attn.dk",v=>{dk=v; compute(); draw(); retune("attn");});
   compute(); draw();
+  installTuner("attn",{
+    name:"temperature", xlab:"ตัวคูณ temperature ของ softmax",
+    ylab:"entropy เฉลี่ยต่อแถว (bit) — ต่ำ = สนใจแบบเจาะจง", higher:false, pick:0,
+    values:[0.1,0.25,0.5,0.75,1,1.5,2,3,4,6],
+    fmt:v=>fmtG(v),
+    series:[{k:"ent",name:"attention entropy",color:C.p5}],
+    run(tp){return {ent:entropy(attnFor(tp,dk,head))};},
+    apply(v){setParam("attn.T",v);},
+    report(v,r,all){
+      return `T=${fmtG(v)} ให้ entropy ต่ำสุด ${r.ent.toFixed(2)} bit (สนใจเจาะจงไม่กี่คำ) เทียบกับ T สูงสุดที่ ${all[all.length-1].ent.toFixed(2)} bit (เกลี่ยความสนใจทั่วประโยค) · เพดานคือ log₂(${TUNE.attn.n||"n"}) เมื่อสนใจเท่ากันหมด`;}
+  });
 };
 
 /* ============ 12 REINFORCEMENT LEARNING ============ */
 D.rl=function(){
   const S=stage("cv-rl"), g=S.g;
   const W=10,H=7;
-  const cell=Math.min((S.h-38)/H,(S.w-230)/W);
-  const ox=18, oy=22;
   const WALLS=new Set(["3,1","3,2","3,3","6,3","6,4","6,5","3,5"]);
   const GOAL=[9,0], TRAP=[[9,3],[5,1],[7,6]];
   const A=[[0,-1],[1,0],[0,1],[-1,0]];
-  let Q, agent, eps=.25, speed=12, running=false, epi=0, tot=0, lastR=[], steps=0, tk=0;
-  function key(x,y){return x+","+y;}
-  function isWall(x,y){return WALLS.has(key(x,y));}
-  function reset(){
-    Q={}; for(let x=0;x<W;x++)for(let y=0;y<H;y++) Q[key(x,y)]=[0,0,0,0];
-    epi=0; tot=0; lastR=[]; newEp();
-  }
+  const key=(x,y)=>x+","+y;
+  const isWall=(x,y)=>WALLS.has(key(x,y));
+  let Q, agent, eps=pv("rl.eps"), alpha=pv("rl.alpha"), gamma=pv("rl.gamma"),
+      speed=pv("rl.speed"), running=false;
+  let epi=0, tot=0, lastR=[], steps=0;
+  function freshQ(){const q={}; for(let x=0;x<W;x++)for(let y=0;y<H;y++) q[key(x,y)]=[0,0,0,0]; return q;}
+  function reset(){Q=freshQ(); epi=0; tot=0; lastR=[]; newEp();}
   function newEp(){agent={x:0,y:H-1}; steps=0; tot=0;}
-  function stepEnv(){
-    const s=key(agent.x,agent.y);
-    const a = Math.random()<eps ? Math.floor(Math.random()*4)
-            : Q[s].indexOf(Math.max(...Q[s]));
-    let nx=agent.x+A[a][0], ny=agent.y+A[a][1];
-    if(nx<0||nx>=W||ny<0||ny>=H||isWall(nx,ny)){nx=agent.x;ny=agent.y;}
+  function move(x,y,a){
+    let nx=x+A[a][0], ny=y+A[a][1];
+    if(nx<0||nx>=W||ny<0||ny>=H||isWall(nx,ny)){nx=x;ny=y;}
     let r=-0.02, done=false;
     if(nx===GOAL[0]&&ny===GOAL[1]){r=1; done=true;}
     else if(TRAP.some(t=>t[0]===nx&&t[1]===ny)){r=-1; done=true;}
-    const s2=key(nx,ny);
-    Q[s][a] += 0.2*(r + 0.95*Math.max(...Q[s2]) - Q[s][a]);
-    agent={x:nx,y:ny}; tot+=r; steps++;
-    if(done||steps>240){
-      epi++; lastR.push(tot); if(lastR.length>40) lastR.shift(); newEp();
+    return {nx,ny,r,done};
+  }
+  function stepEnv(){
+    const s=key(agent.x,agent.y);
+    const a = Math.random()<eps ? Math.floor(Math.random()*4) : Q[s].indexOf(Math.max(...Q[s]));
+    const m=move(agent.x,agent.y,a);
+    Q[s][a] += alpha*(m.r + gamma*Math.max(...Q[key(m.nx,m.ny)]) - Q[s][a]);
+    agent={x:m.nx,y:m.ny}; tot+=m.r; steps++;
+    if(m.done||steps>240){epi++; lastR.push(tot); if(lastR.length>40) lastR.shift(); newEp();}
+  }
+  function trial(e,al,gm,episodes){
+    const q=freshQ(), R=rng(555); let sum=0, counted=0;
+    for(let ep=0;ep<episodes;ep++){
+      let x=0,y=H-1,t=0,acc=0;
+      while(t<200){
+        const s=key(x,y);
+        const a = R()<e ? Math.floor(R()*4) : q[s].indexOf(Math.max(...q[s]));
+        const m=move(x,y,a);
+        q[s][a]+=al*(m.r+gm*Math.max(...q[key(m.nx,m.ny)])-q[s][a]);
+        x=m.nx; y=m.ny; acc+=m.r; t++;
+        if(m.done) break;
+      }
+      if(ep>=episodes*0.6){sum+=acc; counted++;}
     }
+    return sum/Math.max(1,counted);
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
-    let vmax=.01; for(const k in Q) vmax=Math.max(vmax,Math.max(...Q[k]));
-    let vmin=-.01; for(const k in Q) vmin=Math.min(vmin,Math.min(...Q[k]));
+    const cell=Math.min((S.h-38)/H,(S.w-230)/W), ox=18, oy=22;
+    let vmax=.01, vmin=-.01;
+    for(const k in Q){vmax=Math.max(vmax,Math.max(...Q[k])); vmin=Math.min(vmin,Math.min(...Q[k]));}
     for(let x=0;x<W;x++)for(let y=0;y<H;y++){
       const X=ox+x*cell, Y=oy+y*cell;
       if(isWall(x,y)){g.fillStyle="#B9C6D0"; g.fillRect(X,Y,cell,cell);}
@@ -1502,236 +2374,250 @@ D.rl=function(){
         g.fillRect(X,Y,cell,cell);
         const a=Q[key(x,y)].indexOf(Math.max(...Q[key(x,y)]));
         if(Math.abs(v)>0.005){
-          const cx=X+cell/2, cy=Y+cell/2, L=cell*.26;
-          g.strokeStyle=hex2rgba(C.ink,.65); g.lineWidth=1.6; g.beginPath();
-          g.moveTo(cx-A[a][0]*L,cy-A[a][1]*L); g.lineTo(cx+A[a][0]*L,cy+A[a][1]*L); g.stroke();
+          const cx=X+cell/2, cy=Y+cell/2, Lg=cell*.26;
+          g.strokeStyle=hex2rgba(C.ink,.65); g.lineWidth=1.6;
+          g.beginPath(); g.moveTo(cx-A[a][0]*Lg,cy-A[a][1]*Lg); g.lineTo(cx+A[a][0]*Lg,cy+A[a][1]*Lg); g.stroke();
           g.beginPath();
-          g.moveTo(cx+A[a][0]*L,cy+A[a][1]*L);
-          g.lineTo(cx+A[a][0]*L-A[a][0]*4-A[a][1]*4, cy+A[a][1]*L-A[a][1]*4+A[a][0]*4);
-          g.lineTo(cx+A[a][0]*L-A[a][0]*4+A[a][1]*4, cy+A[a][1]*L-A[a][1]*4-A[a][0]*4);
-          g.closePath(); g.fillStyle=hex2rgba(C.ink,.65); g.fill();
-        }
+          g.moveTo(cx+A[a][0]*Lg,cy+A[a][1]*Lg);
+          g.lineTo(cx+A[a][0]*Lg-A[a][0]*4-A[a][1]*4, cy+A[a][1]*Lg-A[a][1]*4+A[a][0]*4);
+          g.lineTo(cx+A[a][0]*Lg-A[a][0]*4+A[a][1]*4, cy+A[a][1]*Lg-A[a][1]*4-A[a][0]*4);
+          g.closePath(); g.fillStyle=hex2rgba(C.ink,.65); g.fill();}
       }
-      g.strokeStyle=C.rule; g.strokeRect(X+.5,Y+.5,cell,cell);
-    }
+      g.strokeStyle=C.rule; g.strokeRect(X+.5,Y+.5,cell,cell);}
     dot(g,ox+agent.x*cell+cell/2,oy+agent.y*cell+cell/2,cell*.24,C.p3,"#fff");
-    // reward chart
     const cx0=ox+W*cell+26, cw=Math.max(80,S.w-cx0-18), ch=Math.min(150,(H*cell)*0.52);
     label(g,"รางวัลรวมต่อ episode (40 ล่าสุด)",cx0,oy+10,C.dim,10);
     g.strokeStyle=C.rule; g.strokeRect(cx0+.5,oy+18.5,cw,ch);
     if(lastR.length>1){
       const Y=v=>oy+18+ch-((v+1.4)/2.6)*ch;
-      g.strokeStyle=hex2rgba(C.dim,.4); g.beginPath();
-      g.moveTo(cx0,Y(0)); g.lineTo(cx0+cw,Y(0)); g.stroke();
+      g.strokeStyle=hex2rgba(C.dim,.4);
+      g.beginPath(); g.moveTo(cx0,Y(0)); g.lineTo(cx0+cw,Y(0)); g.stroke();
       g.strokeStyle=C.p1; g.lineWidth=1.8; g.beginPath();
-      lastR.forEach((v,i)=>{const X=cx0+i/(lastR.length-1)*cw;
-        i?g.lineTo(X,Y(v)):g.moveTo(X,Y(v));});
-      g.stroke();
-    }
+      lastR.forEach((v,i)=>{const X=cx0+i/(lastR.length-1)*cw; i?g.lineTo(X,Y(v)):g.moveTo(X,Y(v));});
+      g.stroke();}
     label(g,"START",ox+2,oy+H*cell+14,C.dim,9.5);
     if(cw>150){
-      let ly=oy+ch+52;
+      const ly=oy+ch+52;
       label(g,"อ่านภาพนี้ยังไง",cx0,ly-14,C.ink,10.5);
-      [["สีเขียวเข้ม","ช่องที่เอเจนต์ประเมินว่ามีค่ามาก"],
-       ["สีชมพู","ช่องที่เคยพาไปเจอกับดัก"],
-       ["ลูกศร","การกระทำที่ดีที่สุดของช่องนั้น"],
-       ["จุดส้ม","ตำแหน่งเอเจนต์ตอนนี้"]].forEach((r,i)=>{
-        label(g,r[0],cx0,ly+i*17,C.p1,10);
-        label(g,r[1],cx0+62,ly+i*17,C.dim,10);});
-      label(g,"α = 0.20   γ = 0.95   ε = "+eps.toFixed(2),cx0,ly+4*17+8,C.ink,10);
-    }
+      [["สีเขียวเข้ม","ช่องที่ประเมินว่ามีค่ามาก"],["สีชมพู","ช่องที่เคยพาไปเจอกับดัก"],
+       ["ลูกศร","การกระทำที่ดีที่สุดของช่องนั้น"],["จุดส้ม","ตำแหน่งเอเจนต์ตอนนี้"]]
+       .forEach((r,i)=>{label(g,r[0],cx0,ly+i*17,C.p1,10); label(g,r[1],cx0+62,ly+i*17,C.dim,10);});
+      label(g,`α ${alpha.toFixed(2)}   γ ${gamma.toFixed(2)}   ε ${eps.toFixed(2)}`,cx0,ly+4*17+8,C.ink,10);}
     document.getElementById("rl-out").textContent =
       `episode ${epi} · step ${steps} · รางวัลสะสม ${tot.toFixed(2)}`;
   }
   document.querySelector('[data-act="rl-run"]').onclick=()=>{
     running=!running;
-    if(running) loop("rl",()=>{for(let i=0;i<speed;i++) stepEnv(); draw();});
-    else stop("rl");
-  };
+    if(running) loop("rl",()=>{for(let i=0;i<speed;i++) stepEnv(); draw();}); else stop("rl");};
   document.querySelector('[data-act="rl-reset"]').onclick=()=>{
     running=false; stop("rl"); reset(); draw();};
-  document.getElementById("rl-e").oninput=e=>{eps=e.target.value/100;
-    document.getElementById("rl-ev").textContent=eps.toFixed(2);};
-  document.getElementById("rl-sp").oninput=e=>{speed=+e.target.value;
-    document.getElementById("rl-spv").textContent=speed;};
+  onParam("rl.eps",v=>{eps=v; draw();});
+  onParam("rl.alpha",v=>{alpha=v; draw();});
+  onParam("rl.gamma",v=>{gamma=v; draw();});
+  onParam("rl.speed",v=>{speed=v;});
   reset(); draw();
+  installTuner("rl",{
+    name:"epsilon", xlab:"ε — สัดส่วนการเดินสุ่มเพื่อสำรวจ",
+    ylab:"รางวัลเฉลี่ยช่วงท้ายการเรียนรู้", higher:true, pick:0,
+    auto:false, idle:"กดปุ่มเพื่อเทรนเอเจนต์ 7 ตัวด้วยค่า ε ต่างกัน (ใช้เวลาสักครู่)",
+    values:[0,0.05,0.1,0.2,0.3,0.5,0.8], fmt:v=>v.toFixed(2),
+    series:[{k:"rew",name:"รางวัลเฉลี่ย",color:C.p4}],
+    run(e){return {rew:trial(e,alpha,gamma,400)};},
+    apply(v){setParam("rl.eps",v);},
+    report(v,r,all){return `ε ที่ดีที่สุด = ${v.toFixed(2)} (รางวัลเฉลี่ย ${r.rew.toFixed(3)}) · ไม่สำรวจเลย ε=0 ได้ ${all[0].rew.toFixed(3)} · สำรวจหนัก ε=0.8 ได้ ${all[all.length-1].rew.toFixed(3)}`;}
+  });
 };
 
 /* ============ 13 XGBOOST ============ */
 D.xgb=function(){
   const S=stage("cv-xgb"), g=S.g;
-  const pad=46;
-  let R=rng(13), data=[], rounds=10, lr=.2, dep=2, models=[], base=0;
-  const gw=()=>S.w-pad-20;
+  const pad=46, MAXR=120;
+  let R=rng(13), data=[], rounds=pv("xgb.n"), lr=pv("xgb.lr"), dep=pv("xgb.depth"),
+      sub=pv("xgb.sub"), models=[], base=0, sp0=null;
   function gen(){
-    R=rng(Math.floor(Math.random()*1e6)+1);
-    data=[];
-    for(let i=0;i<70;i++){
-      const x=i/69;
-      const y=Math.sin(x*6.5)*.55 + (x>.6?.45:0) + .11*gauss(R);
-      data.push({x,y});
+    R=rng(Math.floor(Math.random()*1e6)+1); data=[];
+    for(let i=0;i<80;i++){
+      const x=i/79;
+      data.push({x,y:Math.sin(x*6.5)*.55+(x>.6?.45:0)+.11*gauss(R), va:i%4===3});
     }
+    sp0={tr:data.filter(p=>!p.va), va:data.filter(p=>p.va)};
     fit();
   }
-  function stumpFit(res,depth){
-    // res: array of {x, r}
-    function rec(pts,d){
-      const mean=pts.reduce((s,p)=>s+p.r,0)/Math.max(1,pts.length);
-      if(d>=depth||pts.length<4) return {leaf:true,v:mean};
-      let best=null;
-      for(let i=1;i<pts.length-1;i+=2){
-        const th=(pts[i].x+pts[i+1].x)/2;
-        const L=pts.filter(p=>p.x<th), Rt=pts.filter(p=>p.x>=th);
-        if(L.length<2||Rt.length<2) continue;
-        const m1=L.reduce((s,p)=>s+p.r,0)/L.length, m2=Rt.reduce((s,p)=>s+p.r,0)/Rt.length;
-        const sse=L.reduce((s,p)=>s+(p.r-m1)**2,0)+Rt.reduce((s,p)=>s+(p.r-m2)**2,0);
-        if(!best||sse<best.sse) best={sse,th,L,R:Rt};
-      }
-      if(!best) return {leaf:true,v:mean};
-      return {leaf:false,th:best.th,l:rec(best.L,d+1),r:rec(best.R,d+1)};
-    }
-    return rec(res.slice().sort((a,b)=>a.x-b.x),0);
-  }
-  function evalStump(t,x){while(!t.leaf) t = x<t.th?t.l:t.r; return t.v;}
   function fit(){
-    base=data.reduce((s,p)=>s+p.y,0)/data.length;
+    const tr=sp0.tr;
+    base=tr.reduce((s,p)=>s+p.y,0)/tr.length;
     models=[];
-    const pred=data.map(()=>base);
-    for(let m=0;m<80;m++){
-      const res=data.map((p,i)=>({x:p.x,r:p.y-pred[i]}));
-      const t=stumpFit(res,dep);
+    const pred=tr.map(()=>base);
+    const RR=rng(777);
+    for(let m=0;m<MAXR;m++){
+      let res=tr.map((p,i)=>({x:p.x,r:p.y-pred[i]}));
+      if(sub<1) res=res.filter(()=>RR()<sub);
+      if(res.length<4) res=tr.map((p,i)=>({x:p.x,r:p.y-pred[i]}));
+      const t=stumpFit(res,dep,2);
       models.push(t);
-      data.forEach((p,i)=>{pred[i]+=lr*evalStump(t,p.x);});
+      tr.forEach((p,i)=>{pred[i]+=lr*stumpEval(t,p.x);});
     }
   }
-  function predict(x,n){
-    let v=base;
-    for(let m=0;m<n;m++) v+=lr*evalStump(models[m],x);
-    return v;
-  }
+  function predict(x,n){let v=base; for(let m=0;m<n;m++) v+=lr*stumpEval(models[m],x); return v;}
+  const mseOf=(set,n)=>set.reduce((s,p)=>{const r=p.y-predict(p.x,n); return s+r*r;},0)/Math.max(1,set.length);
   function draw(){
     g.clearRect(0,0,S.w,S.h);
-    const topH=S.h*.60-18, botY=S.h*.60+16, botH=S.h-botY-24;
-    const w=gw();
-    const X=x=>pad+x*w;
-    const lo=-1.35, hi=1.35;
-    const Y=v=>18+(hi-v)/(hi-lo)*topH;
+    const topH=S.h*.60-18, botY=S.h*.60+16, botH=S.h-botY-24, w=S.w-pad-20;
+    const X=x=>pad+x*w, lo=-1.35, hi=1.35, Y=v=>18+(hi-v)/(hi-lo)*topH;
     grid(g,pad,18,w,topH,10);
-    label(g,"ค่าจริง (จุด) vs ค่าทำนายรวม (เส้น)",pad,12,C.dim,10);
-    // prediction curve
+    label(g,"● จุดเทรน  ○ จุด validation  — เส้น = ค่าทำนายรวม",pad,12,C.dim,10);
     g.strokeStyle=C.p1; g.lineWidth=2.4; g.beginPath();
-    for(let i=0;i<=260;i++){const x=i/260, v=predict(x,rounds);
-      i?g.lineTo(X(x),Y(v)):g.moveTo(X(x),Y(v));}
+    for(let i=0;i<=260;i++){const x=i/260, v=predict(x,rounds); i?g.lineTo(X(x),Y(v)):g.moveTo(X(x),Y(v));}
     g.stroke();
-    data.forEach(p=>dot(g,X(p.x),Y(p.y),3,hex2rgba(C.ink,.55)));
-    // residual panel
+    sp0.tr.forEach(p=>dot(g,X(p.x),Y(p.y),3,hex2rgba(C.ink,.55)));
+    sp0.va.forEach(p=>ring(g,X(p.x),Y(p.y),3.6,C.p2));
     const rY=v=>botY+botH/2-v*(botH/2-4)/0.8;
     g.strokeStyle=C.rule; g.strokeRect(pad+.5,botY+.5,w,botH);
-    g.strokeStyle=hex2rgba(C.dim,.5); g.beginPath();
-    g.moveTo(pad,rY(0)); g.lineTo(pad+w,rY(0)); g.stroke();
+    g.strokeStyle=hex2rgba(C.dim,.5);
+    g.beginPath(); g.moveTo(pad,rY(0)); g.lineTo(pad+w,rY(0)); g.stroke();
     label(g,"residual ที่เหลือ (y − F"+rounds+")",pad,botY-8,C.dim,10);
-    let mse=0;
-    data.forEach(p=>{
-      const r=p.y-predict(p.x,rounds); mse+=r*r;
-      g.strokeStyle = r>0?C.p3:C.p2; g.lineWidth=2;
-      g.beginPath(); g.moveTo(X(p.x),rY(0)); g.lineTo(X(p.x),rY(Math.max(-.79,Math.min(.79,r)))); g.stroke();
-    });
-    mse/=data.length;
+    sp0.tr.forEach(p=>{
+      const r=p.y-predict(p.x,rounds);
+      g.strokeStyle=r>0?C.p3:C.p2; g.lineWidth=2;
+      g.beginPath(); g.moveTo(X(p.x),rY(0)); g.lineTo(X(p.x),rY(Math.max(-.79,Math.min(.79,r)))); g.stroke();});
     document.getElementById("xgb-out").textContent =
-      `รอบ ${rounds} · η = ${lr.toFixed(2)} · MSE = ${mse.toFixed(4)}`;
+      `รอบ ${rounds} · η ${lr.toFixed(2)} · ลึก ${dep} · subsample ${sub.toFixed(2)} · MSE เทรน ${mseOf(sp0.tr,rounds).toFixed(4)} · MSE val ${mseOf(sp0.va,rounds).toFixed(4)}`;
   }
-  document.getElementById("xgb-n").oninput=e=>{rounds=+e.target.value;
-    document.getElementById("xgb-nv").textContent=rounds; draw();};
-  document.getElementById("xgb-lr").oninput=e=>{lr=e.target.value/100;
-    document.getElementById("xgb-lrv").textContent=lr.toFixed(2); fit(); draw();};
-  document.getElementById("xgb-d").oninput=e=>{dep=+e.target.value;
-    document.getElementById("xgb-dv").textContent=dep; fit(); draw();};
-  document.querySelector('[data-act="xgb-new"]').onclick=()=>{gen();draw();};
+  onParam("xgb.n",v=>{rounds=Math.min(v,MAXR); draw();});
+  onParam("xgb.lr",v=>{lr=v; fit(); draw(); retune("xgb");});
+  onParam("xgb.depth",v=>{dep=v; fit(); draw(); retune("xgb");});
+  onParam("xgb.sub",v=>{sub=v; fit(); draw(); retune("xgb");});
+  document.querySelector('[data-act="xgb-new"]').onclick=()=>{gen();draw();retune("xgb");};
   gen(); draw();
+  installTuner("xgb",{
+    name:"n_estimators", xlab:"จำนวนรอบ boosting", ylab:"MSE (ยิ่งต่ำยิ่งดี)", higher:false, pick:1,
+    values:[1,2,4,6,8,12,16,24,32,48,64,80,100,120],
+    series:[{k:"train",name:"train",color:C.p1,dash:true},{k:"val",name:"validation",color:C.p2}],
+    run(n){return {train:mseOf(sp0.tr,n),val:mseOf(sp0.va,n)};},
+    apply(v){setParam("xgb.n",v);},
+    report(v,r){return `จุด early stopping อยู่ราวรอบที่ ${v} · MSE val ${r.val.toFixed(4)} — หลังจากนี้เส้น train ยังลงแต่ val เริ่มขึ้น คือ overfit`;}
+  });
 };
 
 /* ============ 14 STACKING ============ */
 D.stack=function(){
   const S=stage("cv-stack"), g=S.g;
-  let R=rng(41), pts=[], kind="moons";
-  let tree=null, lr=null, base=[], meta=null;
-  const smallW=()=>Math.min((S.h-70)/2, (S.w*.42-30)/2);
+  let R=rng(41), pts=[], kind=pv("stack.data"),
+      use={knn:pv("stack.knn"),tree:pv("stack.tree"),logreg:pv("stack.logreg")},
+      metaC=pv("stack.metaC"), kk=pv("stack.knnk"), td=pv("stack.treed"), nfold=pv("stack.cv");
+  let tree=null, lg=null, base=[], meta=null, sp0=null;
   function gen(){
     R=rng(Math.floor(Math.random()*1e6)+1);
-    pts = kind==="moons"?makeMoons(34,.035,R) : kind==="xor"?makeXor(150,R) : makeCircles(45,R);
+    pts = kind==="moons"?makeMoons(55,.045,R) : kind==="xor"?makeXor(210,R) : makeCircles(60,R);
+    sp0=splitData(pts,.65,17);
     fit();
   }
-  function knnP(x,y,k){
-    const nb=pts.map(p=>({l:p.l,d:(p.x-x)**2+(p.y-y)**2})).sort((a,b)=>a.d-b.d).slice(0,k);
-    return nb.reduce((s,n)=>s+n.l,0)/k;
-  }
   function fit(){
-    tree=buildTree(pts,0,4,2,false,R);
-    lr=trainLogreg(pts,1200,1.5);
-    base=[
-      {name:"kNN k=7", f:(x,y)=>knnP(x,y,7), col:C.p1},
-      {name:"Tree d=4", f:(x,y)=>treeProbs(tree,x,y)[1], col:C.p6},
-      {name:"LogReg", f:(x,y)=>1/(1+Math.exp(-(lr.w1*x+lr.w2*y+lr.b))), col:C.p4}
+    const tr=sp0.tr;
+    tree=buildTree(tr,{maxDepth:td,minLeaf:1,crit:"gini",nc:2,featSub:false,R});
+    lg=fitLogit(tr,1,1,400);
+    const all=[
+      {id:"knn",name:"kNN k="+kk,f:(x,y)=>knnVote(tr,x,y,kk,2,"uniform",2)[1]},
+      {id:"tree",name:"Tree d="+td,f:(x,y)=>treeProbs(tree,x,y)[1]},
+      {id:"logreg",name:"LogReg",f:(x,y)=>predLogit(lg,x,y)}
     ];
-    // meta features (in-sample here for demo speed)
-    const mf=pts.map(p=>({x:base[0].f(p.x,p.y),y:base[1].f(p.x,p.y),z:base[2].f(p.x,p.y),l:p.l}));
-    let w=[0,0,0], b=0;
-    for(let e=0;e<2500;e++){
-      let g1=0,g2=0,g3=0,gb=0;
-      for(const m of mf){
-        const s=1/(1+Math.exp(-(w[0]*m.x+w[1]*m.y+w[2]*m.z+b))), d=s-m.l;
-        g1+=d*m.x; g2+=d*m.y; g3+=d*m.z; gb+=d;
-      }
-      const n=mf.length, a=1.2;
-      w[0]-=a*g1/n; w[1]-=a*g2/n; w[2]-=a*g3/n; b-=a*gb/n;
+    base=all.filter(b=>use[b.id]);
+    if(!base.length) base=[all[0]];
+    // ---- out-of-fold predictions (กฎเหล็กของ stacking) ----
+    const K=nfold, fold=tr.map((_,i)=>i%K), OOF=tr.map(()=>[]);
+    for(let f=0;f<K;f++){
+      const sub2=tr.filter((_,i)=>fold[i]!==f);
+      if(sub2.length<8) continue;
+      const t2=buildTree(sub2,{maxDepth:td,minLeaf:1,crit:"gini",nc:2,featSub:false,R});
+      const l2=fitLogit(sub2,1,1,300);
+      const fns={knn:(x,y)=>knnVote(sub2,x,y,kk,2,"uniform",2)[1],
+                 tree:(x,y)=>treeProbs(t2,x,y)[1],
+                 logreg:(x,y)=>predLogit(l2,x,y)};
+      tr.forEach((p,i)=>{if(fold[i]===f) OOF[i]=base.map(b=>fns[b.id](p.x,p.y));});
     }
+    const mf=tr.map((p,i)=>({f:OOF[i].length?OOF[i]:base.map(b=>b.f(p.x,p.y)),l:p.l}));
+    const d=base.length, lam=1/(metaC*mf.length);
+    let w=new Array(d).fill(0), b=0;
+    for(let e=0;e<4000;e++){
+      const gw=new Array(d).fill(0); let gb=0;
+      for(const m of mf){
+        let z=b; for(let j=0;j<d;j++) z+=w[j]*m.f[j];
+        const s=1/(1+Math.exp(-z)), dd=s-m.l;
+        for(let j=0;j<d;j++) gw[j]+=dd*m.f[j];
+        gb+=dd;}
+      for(let j=0;j<d;j++) w[j]-=2.5*(gw[j]/mf.length+lam*w[j]);
+      b-=2.5*gb/mf.length;}
     meta={w,b};
   }
   function metaP(x,y){
-    const a=base[0].f(x,y), c=base[1].f(x,y), d=base[2].f(x,y);
-    return 1/(1+Math.exp(-(meta.w[0]*a+meta.w[1]*c+meta.w[2]*d+meta.b)));
+    let z=meta.b; base.forEach((bm,j)=>{z+=meta.w[j]*bm.f(x,y);});
+    return 1/(1+Math.exp(-z));
   }
+  const accOf=(fn,set)=>set.reduce((a,p)=>a+(((fn(p.x,p.y)>.5?1:0)===p.l)?1:0),0)/Math.max(1,set.length);
   function panel(fn,X0,Y0,size,title,acc){
     const s=Math.max(4,Math.round(size/40));
     for(let i=0;i<size;i+=s)for(let j=0;j<size;j+=s){
       const p=fn(i/size,1-j/size);
       g.fillStyle = p>.5?hex2rgba(C.p2,(p-.5)*.75):hex2rgba(C.p1,(.5-p)*.75);
-      g.fillRect(X0+i,Y0+j,s,s);
-    }
+      g.fillRect(X0+i,Y0+j,s,s);}
     g.strokeStyle=C.rule; g.strokeRect(X0+.5,Y0+.5,size,size);
-    pts.forEach(p=>dot(g,X0+p.x*size,Y0+(1-p.y)*size,size>200?3.4:2.4,CLS[p.l],"#fff"));
+    sp0.tr.forEach(p=>dot(g,X0+p.x*size,Y0+(1-p.y)*size,size>200?3.2:2.2,CLS[p.l],"#fff"));
+    sp0.va.forEach(p=>ring(g,X0+p.x*size,Y0+(1-p.y)*size,size>200?3.6:2.6,CLS[p.l]));
     label(g,title,X0,Y0-6,C.ink,10.5);
-    g.fillStyle="rgba(255,255,255,.88)"; g.fillRect(X0+4,Y0+size-19,44,15);
+    g.fillStyle="rgba(255,255,255,.88)"; g.fillRect(X0+4,Y0+size-19,52,15);
     label(g,acc,X0+8,Y0+size-8,C.p1,10.5);
-  }
-  function accOf(fn){
-    let ok=0; pts.forEach(p=>{if((fn(p.x,p.y)>.5?1:0)===p.l)ok++;});
-    return (100*ok/pts.length).toFixed(1)+"%";
   }
   function draw(){
     g.clearRect(0,0,S.w,S.h);
-    const top=30, rowGap=22;
-    const sSize=Math.min((S.h-top-16-rowGap*2)/3, S.w*0.26);
+    const top=30, rowGap=22, nB=base.length;
+    const sSize=Math.min((S.h-top-16-rowGap*(nB-1))/nB, S.w*0.26);
     const bigMax=S.h-top-16;
     const big=Math.min(bigMax, S.w-(20+sSize)-70);
     const bx=S.w-big-20;
-    base.forEach((m,i)=>{
-      panel(m.f, 20, top+i*(sSize+rowGap), sSize, m.name, accOf(m.f));
-    });
-    panel(metaP, bx, top+(bigMax-big)/2, big, "STACKED  →  meta-learner", accOf(metaP));
+    base.forEach((m,i)=>panel(m.f,20,top+i*(sSize+rowGap),sSize,m.name,
+      (accOf(m.f,sp0.va)*100).toFixed(1)+"%"));
+    panel(metaP,bx,top+(bigMax-big)/2,big,"STACKED  →  meta-learner",
+      (accOf(metaP,sp0.va)*100).toFixed(1)+"%");
     g.strokeStyle=hex2rgba(C.dim,.6); g.lineWidth=1.4;
     const bcy=top+(bigMax-big)/2+big/2;
-    for(let i=0;i<3;i++){
+    for(let i=0;i<nB;i++){
       const y=top+i*(sSize+rowGap)+sSize/2;
       g.beginPath(); g.moveTo(20+sSize+6,y);
-      g.bezierCurveTo(bx-34,y,bx-34,bcy,bx-6,bcy); g.stroke();
-    }
+      g.bezierCurveTo(bx-34,y,bx-34,bcy,bx-6,bcy); g.stroke();}
     document.getElementById("stack-out").textContent =
-      `น้ำหนัก meta: kNN ${meta.w[0].toFixed(2)} · tree ${meta.w[1].toFixed(2)} · logreg ${meta.w[2].toFixed(2)}`;
+      "น้ำหนัก meta: "+base.map((b,j)=>b.name+" "+meta.w[j].toFixed(2)).join(" · ")+" · ตัวเลขในกรอบคือความแม่นบนชุด validation";
   }
-  document.querySelector('[data-act="stack-new"]').onclick=()=>{gen();draw();};
-  document.getElementById("stack-data").onchange=e=>{kind=e.target.value; gen(); draw();};
+  ["knn","tree","logreg"].forEach(id=>onParam("stack."+id,v=>{
+    use[id]=v; fit(); draw(); retune("stack");}));
+  onParam("stack.knnk",v=>{kk=v; fit(); draw(); retune("stack");});
+  onParam("stack.treed",v=>{td=v; fit(); draw(); retune("stack");});
+  onParam("stack.cv",v=>{nfold=v; fit(); draw(); retune("stack");});
+  onParam("stack.metaC",v=>{metaC=v; fit(); draw(); retune("stack");});
+  onParam("stack.data",v=>{kind=v; gen(); draw(); retune("stack");});
+  document.querySelector('[data-act="stack-new"]').onclick=()=>{gen();draw();retune("stack");};
   gen(); draw();
+  installTuner("stack",{
+    name:"model", mode:"bars", ylab:"ความแม่นบนชุด validation", higher:true, tieLast:true,
+    values:[0,1,2,3], fmt:v=>(v*100).toFixed(1)+"%",
+    run(i){
+      if(i<3){
+        const tr=sp0.tr;
+        const fns=[(x,y)=>knnVote(tr,x,y,kk,2,"uniform",2)[1],
+                   (x,y)=>treeProbs(tree,x,y)[1],
+                   (x,y)=>predLogit(lg,x,y)];
+        const nm=["kNN","Tree","LogReg"], ids=["knn","tree","logreg"];
+        return {v:accOf(fns[i],sp0.va), label:nm[i]+(use[ids[i]]?"":" (ปิด)"),
+                color:use[ids[i]]?C.p1:C.dim};
+      }
+      return {v:accOf(metaP,sp0.va), label:"STACKED", color:C.p4};
+    },
+    report(v,r,all){
+      const bestBase=Math.max(all[0].v,all[1].v,all[2].v);
+      const st=all[3].v;
+      return st>=bestBase
+        ? `stacking ได้ ${(st*100).toFixed(1)}% เทียบกับ base ที่ดีที่สุด ${(bestBase*100).toFixed(1)}% — การรวมช่วยจริง`
+        : `รอบนี้ stacking ได้ ${(st*100).toFixed(1)}% ยังไม่ชนะ base ที่ดีที่สุด ${(bestBase*100).toFixed(1)}% — ลองเปลี่ยนชุดข้อมูลหรือปิด base ที่อ่อนออก`;}
+  });
 };
 
 /* ============ router ============ */
@@ -1740,11 +2626,11 @@ function show(n){
   stopAll();
   document.querySelectorAll(".plate").forEach(p=>p.classList.toggle("on",p.dataset.plate===String(n)));
   document.querySelectorAll("#nav a").forEach(a=>a.classList.toggle("on",a.dataset.go===String(n)));
-  const el=document.querySelector(`.plate[data-plate="${n}"]`);
-  const key=el.dataset.demo;
-  if(!inited[key]){
-    requestAnimationFrame(()=>{try{D[key]();inited[key]=true;}catch(err){console.error(key,err);}});
-  }
+  const el=document.querySelector('.plate[data-plate="'+n+'"]');
+  if(!el) return;
+  const k=el.dataset.demo;
+  if(!inited[k]) requestAnimationFrame(()=>{
+    try{CUR=k; clearOwner(k); D[k](); inited[k]=true;}catch(err){console.error(k,err);}});
 }
 document.getElementById("nav").addEventListener("click",e=>{
   const a=e.target.closest("a[data-go]"); if(!a) return;
@@ -1756,14 +2642,17 @@ let resizeT;
 window.addEventListener("resize",()=>{
   clearTimeout(resizeT);
   resizeT=setTimeout(()=>{
-    const cur=document.querySelector(".plate.on");
-    if(!cur) return;
-    stopAll(); inited[cur.dataset.demo]=false;
-    try{D[cur.dataset.demo](); inited[cur.dataset.demo]=true;}catch(e){console.error(e);}
+    const cur=document.querySelector(".plate.on"); if(!cur) return;
+    const dk=cur.dataset.demo;
+    stopAll(); inited[dk]=false; CUR=dk; clearOwner(dk);
+    try{D[dk](); inited[dk]=true;}catch(e){console.error(e);}
   },240);
 });
+buildPanels();
 const start=(location.hash.match(/^#p(\d+)$/)||[])[1]||"1";
 show(start);
+
+
 </script>
 </body>
 </html>
