@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Machine Learning Algorithm Visualizer</title>
+<style>
+:root{--bg:#0b1020;--card:#121a2f;--card2:#18233d;--text:#eaf0ff;--muted:#9aa8c7;--accent:#66d9ef;--accent2:#a78bfa;--good:#34d399;--warn:#fbbf24}
+*{box-sizing:border-box} body{margin:0;font-family:Inter,system-ui,Arial,sans-serif;background:linear-gradient(135deg,#080c18,#111a31);color:var(--text)}
+header{padding:42px 6vw 28px;text-align:center} h1{margin:0 0 10px;font-size:clamp(28px,5vw,52px)} header p{color:var(--muted);max-width:820px;margin:auto}
+nav{position:sticky;top:0;z-index:5;background:#0b1020e8;backdrop-filter:blur(12px);padding:10px 5vw;border-bottom:1px solid #ffffff12;display:flex;gap:8px;overflow:auto}
+nav button{white-space:nowrap;border:1px solid #ffffff18;background:#ffffff08;color:var(--text);padding:8px 12px;border-radius:999px;cursor:pointer}nav button:hover{background:#ffffff16}
+main{width:min(1200px,92vw);margin:25px auto 60px}.section{margin:35px 0}.section h2{font-size:26px;margin-bottom:15px}.grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:16px}
+.card{background:linear-gradient(145deg,var(--card),var(--card2));border:1px solid #ffffff12;border-radius:18px;padding:18px;box-shadow:0 12px 30px #0003}.card h3{margin:0 0 8px}.tag{font-size:11px;color:var(--accent);letter-spacing:.12em;text-transform:uppercase}.desc{color:var(--muted);font-size:14px;line-height:1.5;min-height:42px}
+canvas{width:100%;height:190px;background:#080d1a;border-radius:12px;border:1px solid #ffffff10;display:block;margin:12px 0}
+.controls{display:flex;gap:8px;flex-wrap:wrap}.controls button,.controls select{border:0;border-radius:9px;padding:8px 11px;background:#263455;color:#fff;cursor:pointer}.controls button:hover{background:#35476f}
+.kpi{display:flex;justify-content:space-between;color:var(--muted);font-size:12px}.kpi b{color:var(--text)}
+footer{text-align:center;color:var(--muted);padding:20px;border-top:1px solid #ffffff10}
+.hero{display:grid;grid-template-columns:1.2fr .8fr;gap:18px;align-items:stretch}.hero .box{padding:25px;border-radius:20px;background:#ffffff08;border:1px solid #ffffff12}.hero ul{color:var(--muted);line-height:1.8}
+@media(max-width:760px){.hero{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+<header id="top">
+  <div class="tag">Interactive One-Page AI / Machine Learning</div>
+  <h1>Machine Learning Algorithm Visualizer</h1>
+  <p>Explore the intuition behind common supervised, unsupervised, neural-network and reinforcement-learning algorithms through lightweight interactive visualizations.</p>
+</header>
+<nav>
+  <button onclick="go('supervised')">Supervised</button><button onclick="go('unsupervised')">Unsupervised</button>
+  <button onclick="go('reinforcement')">Reinforcement</button><button onclick="go('top')">↑ Top</button>
+</nav>
+<main>
+<section class="hero">
+ <div class="box"><h2>How to use</h2><p>Each card contains a simplified visual model. Click <b>Run</b>, <b>Shuffle</b>, or move the controls to see the concept change.</p>
+ <ul><li>Regression → predict a continuous value</li><li>Classification → choose a class</li><li>Clustering → discover groups</li><li>Neural networks → learn layered representations</li><li>RL → learn actions from rewards</li></ul></div>
+ <div class="box"><h2>Algorithm map</h2><p>① Linear Regression · ② Logistic Regression · ③ kNN · ④ Decision Tree · ⑤ Random Forest · ⑥ SVM · ⑦ K-Means · ⑧ MLP · ⑨ CNN · ⑩ LSTM · ⑪ Transformer · ⑫ Reinforcement Learning · ⑬ XGBoost · ⑭ Stacking</p></div>
+</section>
+
+<section class="section" id="supervised"><h2>Supervised Learning</h2><div class="grid" id="sup"></div></section>
+<section class="section" id="unsupervised"><h2>Unsupervised Learning</h2><div class="grid" id="unsup"></div></section>
+<section class="section" id="reinforcement"><h2>Reinforcement Learning</h2><div class="grid" id="rl"></div></section>
+</main>
+<footer>Machine Learning Visualizer · Single HTML file · No external libraries</footer>
+
+<script>
+const specs=[
+["Linear Regression","Supervised","Predict a continuous target with a best-fit line.",drawRegression],
+["Logistic Regression","Supervised","Map a linear score through a sigmoid for classification.",drawLogistic],
+["kNN","Supervised","Classify a point using the nearest training examples.",drawKNN],
+["Decision Tree","Supervised","Split data using simple decision rules.",drawTree],
+["Random Forest","Supervised","Combine many decision trees by voting.",drawForest],
+["SVM","Supervised","Find a separating boundary with a maximum margin.",drawSVM],
+["K-Means","Unsupervised","Iteratively assign points to the nearest centroid.",drawKMeans],
+["MLP (Neural Network)","Supervised","Feed-forward layers transform inputs into predictions.",drawMLP],
+["CNN","Neural Network","Convolutional filters detect local patterns in a grid.",drawCNN],
+["LSTM","Neural Network","A recurrent cell keeps useful information over time.",drawLSTM],
+["Transformer","Neural Network","Self-attention connects tokens across a sequence.",drawTransformer],
+["Reinforcement Learning","Reinforcement","An agent learns actions through rewards.",drawRL],
+["XGBoost","Supervised","Boost weak trees sequentially to reduce errors.",drawBoost],
+["Stacking","Supervised","Combine several base models with a meta-model.",drawStack]
+];
+const groups={Supervised:document.querySelector("#sup"),Unsupervised:document.querySelector("#unsup"),"Neural Network":document.querySelector("#unsup"),Reinforcement:document.querySelector("#rl")};
+
+specs.forEach((s,i)=>{
+ const [name,type,desc,fn]=s, c=document.createElement("article"); c.className="card";
+ c.innerHTML=`<div class="tag">${String(i+1).padStart(2,"0")} · ${type}</div><h3>${name}</h3><div class="desc">${desc}</div><canvas id="cv${i}" width="560" height="260"></canvas><div class="controls"><button onclick="rerun(${i})">Run</button><button onclick="shuffle(${i})">Shuffle</button></div>`;
+ groups[type].appendChild(c); fn(i);
+});
+function ctx(i){return document.querySelector("#cv"+i).getContext("2d")}
+function clear(c){c.clearRect(0,0,c.canvas.width,c.canvas.height);c.fillStyle="#080d1a";c.fillRect(0,0,c.canvas.width,c.canvas.height)}
+function axes(c){c.strokeStyle="#263452";c.lineWidth=1;c.beginPath();c.moveTo(35,225);c.lineTo(535,225);c.moveTo(35,20);c.lineTo(35,225);c.stroke()}
+function dot(c,x,y,r=5,fill="#66d9ef"){c.fillStyle=fill;c.beginPath();c.arc(x,y,r,0,Math.PI*2);c.fill()}
+function line(c,x1,y1,x2,y2,col="#a78bfa",w=3){c.strokeStyle=col;c.lineWidth=w;c.beginPath();c.moveTo(x1,y1);c.lineTo(x2,y2);c.stroke()}
+function drawRegression(i){let c=ctx(i);clear(c);axes(c);for(let x=50;x<530;x+=32)dot(c,x,205-(x-40)*.28+(Math.random()*30-15),4);line(c,40,190,530,45)}
+function drawLogistic(i){let c=ctx(i);clear(c);axes(c);for(let x=55;x<525;x+=18){let p=1/(1+Math.exp(-(x-290)/45));dot(c,x,220-p*190,4)}c.strokeStyle="#fbbf24";c.lineWidth=3;c.beginPath();for(let x=40;x<535;x++){let p=1/(1+Math.exp(-(x-290)/45));let y=220-p*190;x===40?c.moveTo(x,y):c.lineTo(x,y)}c.stroke()}
+function drawKNN(i){let c=ctx(i);clear(c);axes(c);[[120,80],[150,120],[185,95],[430,90],[460,125],[445,55],[250,170],[280,185]].forEach((p,j)=>dot(c,p[0],p[1],6,j<3?"#66d9ef":j<6?"#f472b6":"#a78bfa"));dot(c,330,125,9,"#fbbf24");[120,150,185].forEach((x,j)=>{let y=[80,120,95][j];line(c,330,125,x,y,"#ffffff55",1)})}
+function drawTree(i){let c=ctx(i);clear(c);line(c,285,35,285,85);line(c,285,85,165,140);line(c,285,85,405,140);line(c,165,140,100,195);line(c,165,140,220,195);line(c,405,140,350,195);line(c,405,140,470,195);[[285,35],[165,140],[405,140],[100,195],[220,195],[350,195],[470,195]].forEach((p,j)=>{dot(c,p[0],p[1],12,j<3?"#66d9ef":"#a78bfa")})}
+function drawForest(i){let c=ctx(i);clear(c);for(let t=0;t<5;t++){let x=60+t*105;line(c,x,50,x-25,200,"#ffffff44",2);line(c,x,100,x+25,200,"#ffffff44",2);dot(c,x,50,10,"#66d9ef");dot(c,x-25,200,7,"#a78bfa");dot(c,x+25,200,7,"#f472b6")}c.font="16px system-ui";c.fillStyle="#fff";c.fillText("tree × 5 → vote",205,235)}
+function drawSVM(i){let c=ctx(i);clear(c);axes(c);for(let x=55;x<510;x+=35){dot(c,x,170-(x-50)*.23,5,"#66d9ef");dot(c,x,105-(x-50)*.23,5,"#f472b6")}line(c,45,135,520,25,"#fbbf24",3);line(c,45,160,520,50,"#ffffff55",1);line(c,45,110,520,0,"#ffffff55",1)}
+function drawKMeans(i){let c=ctx(i);clear(c);axes(c);let pts=[];for(let k=0;k<3;k++)for(let j=0;j<8;j++)pts.push([100+k*170+(Math.random()*70-35),90+(k%2)*80+(Math.random()*60-30),k]);pts.forEach(p=>dot(c,p[0],p[1],5,["#66d9ef","#f472b6","#a78bfa"][p[2]]));[[100,90],[270,170],[440,90]].forEach(p=>dot(c,p[0],p[1],10,"#fbbf24"))}
+function drawMLP(i){let c=ctx(i), layers=[[90,70,130,190],[260,45,95,145,195,245],[430,80,150,220]];layers.forEach((ls,li)=>ls.forEach(y=>layers[li+1]?.forEach(y2=>line(c,li?260:90,y,li==1?430:260,y2,"#ffffff22",1)));layers.forEach((ls,li)=>ls.forEach(y=>dot(c,li==0?90:li==1?260:430,y,9,li==1?"#a78bfa":"#66d9ef")))}
+function drawCNN(i){let c=ctx(i);clear(c);for(let r=0;r<4;r++)for(let k=0;k<4;k++){c.fillStyle=(r+k)%2?"#243452":"#66d9ef";c.fillRect(70+k*35,55+r*35,28,28)}for(let r=0;r<3;r++)for(let k=0;k<3;k++){c.fillStyle="#a78bfa";c.fillRect(270+k*35,70+r*35,28,28)}line(c,400,120,500,120,"#fbbf24",8)}
+function drawLSTM(i){let c=ctx(i);clear(c);for(let x=60;x<=500;x+=55){dot(c,x,125,10,"#66d9ef");if(x>60)line(c,x-55,125,x,125,"#a78bfa",3);line(c,x,90,x,160,"#ffffff33",1)}c.font="15px system-ui";c.fillStyle="#fff";c.fillText("memory / cell state →",190,45)}
+function drawTransformer(i){let c=ctx(i);clear(c);let pts=[80,150,220,290,360,430];pts.forEach((x,a)=>{dot(c,x,180,9,"#66d9ef");pts.forEach((x2,b)=>{if(a<b)line(c,x,180,x2,80+(b%2)*80,"#ffffff22",1)});dot(c,x,80+(a%2)*80,7,"#a78bfa")})}
+function drawRL(i){let c=ctx(i);clear(c);for(let r=0;r<4;r++)for(let k=0;k<7;k++){c.strokeStyle="#263452";c.strokeRect(55+k*65,45+r*45,65,45)}let x=80,y=180;dot(c,x,y,10,"#fbbf24");[[145,180],[210,135],[275,135],[340,90],[405,90]].forEach(p=>{line(c,x,y,p[0],p[1],"#34d399",4);x=p[0];y=p[1];dot(c,x,y,9,"#fbbf24")});c.font="14px system-ui";c.fillStyle="#34d399";c.fillText("+ reward",430,90)}
+function drawBoost(i){let c=ctx(i);clear(c);[0,1,2,3].forEach((t)=>{let y=190-t*42;line(c,60,y,500,y-55,"#66d9ef",3);dot(c,500,y-55,7,"#fbbf24")});c.font="15px system-ui";c.fillStyle="#fff";c.fillText("weak learner → corrected learner → stronger model",65,235)}
+function drawStack(i){let c=ctx(i);clear(c);["LR","SVM","RF"].forEach((s,j)=>{dot(c,100,65+j*70,18,"#66d9ef");c.fillStyle="#fff";c.fillText(s,90,70+j*70)});line(c,120,65,300,130);line(c,120,135,300,130);line(c,120,205,300,130);dot(c,330,130,25,"#fbbf24");c.fillStyle="#fff";c.fillText("META",310,135)}
+function rerun(i){specs[i][3](i)}
+function shuffle(i){specs[i][3](i)}
+function go(id){document.getElementById(id).scrollIntoView({behavior:"smooth"})}
+</script>
+</body>
+</html>
